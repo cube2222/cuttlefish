@@ -1,12 +1,16 @@
 import React, {useState} from "react";
 import ReactMarkdown from "react-markdown";
-import hljs from "highlight.js";
-import {Light as SyntaxHighlighter} from 'react-syntax-highlighter'
-import {dracula} from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
+import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import "highlight.js/styles/github-dark-dimmed.css";
 
+type ChatMessage = {
+    message: string;
+    isSentByMe: boolean;
+};
+
 const ChatLayout = () => {
-    const [messages, setMessages] = useState<Array<string>>([]);
+    const [messages, setMessages] = useState<Array<ChatMessage>>([]);
     const [inputText, setInputText] = useState("");
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -16,9 +20,12 @@ const ChatLayout = () => {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = (debugMode: boolean = false) => {
         if (inputText.trim() !== "") {
-            setMessages([...messages, inputText]);
+            setMessages([
+                ...messages,
+                {message: inputText, isSentByMe: !debugMode},
+            ]);
             setInputText("");
         }
     };
@@ -27,17 +34,17 @@ const ChatLayout = () => {
         {
             id: 1,
             message: "Hey, how's it going?",
-            timestamp: "10:23 AM"
+            timestamp: "10:23 AM",
         },
         {
             id: 2,
             message: "Can you send me the report?",
-            timestamp: "Yesterday"
+            timestamp: "Yesterday",
         },
         {
             id: 3,
             message: "I'll be late to the meeting",
-            timestamp: "Tuesday"
+            timestamp: "Tuesday",
         },
     ];
 
@@ -46,56 +53,65 @@ const ChatLayout = () => {
         alert("Code copied to clipboard!");
     };
 
-    const renderMarkdown = (message: string) => {
+    const renderMarkdown = (message: ChatMessage) => {
         return (
             <ReactMarkdown
-                children={message}
+                children={message.message}
                 components={{
                     code({node, inline, className, children, ...props}) {
-                        const match = /language-(\w+)/.exec(className || '')
+                        const match = /language-(\w+)/.exec(className || "");
                         if (inline) {
-                            return <code className={className} {...props}>
-                                {children}
-                            </code>
+                            return (
+                                <code className={className} {...props}>
+                                    {children}
+                                </code>
+                            );
                         }
-                        return <div
-                            className="relative"
-                            onMouseEnter={(e) => {
-                                const button = e.currentTarget.querySelector('button');
-                                button.style.opacity = '100';
-                            }}
-                            onMouseLeave={(e) => {
-                                const button = e.currentTarget.querySelector('button');
-                                button.style.opacity = '0';
-                            }}
-                        >
-                            <button
-                                className="absolute top-0 right-0 bg-gray-700 text-white py-1 px-2 rounded-md opacity-0 hover:opacity-100 transition-opacity"
-                                onClick={() => copyToClipboard(children as string)}
+                        return (
+                            <div
+                                className="relative"
+                                onMouseEnter={(e) => {
+                                    const button = e.currentTarget.querySelector("button");
+                                    if (button !== null) {
+                                        button.style.opacity = "100";
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    const button = e.currentTarget.querySelector("button");
+                                    if (button !== null) {
+                                        button.style.opacity = "0";
+                                    }
+                                }}
                             >
-                                Copy
-                            </button>
-                            {match ? (
-                            <SyntaxHighlighter
-                                className="rounded-md"
-                                children={String(children).replace(/\n$/, '')}
-                                style={dracula as any}
-                                language={match[1]}
-                                PreTag="div"
-                                {...props}
-                            />
-                            ) : (
-                            <SyntaxHighlighter
-                                className="rounded-md"
-                                children={String(children).replace(/\n$/, '')}
-                                style={dracula as any}
-                                PreTag="div"
-                                {...props}
-                            />)}
-                        </div>
-                    }
+                                <button
+                                    className="absolute top-0 right-0 bg-gray-700 text-white py-1 px-2 rounded-md opacity-0 hover:opacity-100 transition-opacity"
+                                    onClick={() => copyToClipboard(children as string)}
+                                >
+                                    Copy
+                                </button>
+                                {match ? (
+                                    <SyntaxHighlighter
+                                        className="rounded-md"
+                                        children={String(children).replace(/\n$/, "")}
+                                        style={dracula as any}
+                                        language={match[1]}
+                                        PreTag="div"
+                                        {...props}
+                                    />
+                                ) : (
+                                    <SyntaxHighlighter
+                                        className="rounded-md"
+                                        children={String(children).replace(/\n$/, "")}
+                                        style={dracula as any}
+                                        PreTag="div"
+                                        {...props}
+                                    />
+                                )}
+                            </div>
+                        );
+                    },
                 }}
-                className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block max-w-full"
+                className={`bg-${message.isSentByMe ? "green" : "gray"}-700 py-2 px-4 rounded-md text-white inline-block max-w-full`}
             />
         );
     };
@@ -112,9 +128,7 @@ const ChatLayout = () => {
                         <div className="w-10 h-10 rounded-full bg-gray-300 mr-2"></div>
                         <div className="flex-1 text-gray-500">
                             <div className="flex justify-between">
-                                <p className="text-sm">
-                                    {conversation.timestamp}
-                                </p>
+                                <p className="text-sm">{conversation.timestamp}</p>
                             </div>
                             <p className="text-gray-500">{conversation.message}</p>
                         </div>
@@ -126,25 +140,44 @@ const ChatLayout = () => {
                     <div className="flex-1 overflow-y-auto px-4 py-2">
                         {messages.map((message, index) => (
                             <div key={index} className="mb-4">
-                                <div className="text-gray-500 mb-1">{new Date().toLocaleString()}</div>
-                                <div className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block relative max-w-full"
-                                     style={{wordWrap: "break-word"}}>
+                                <div className="text-gray-500 mb-1">
+                                    {new Date().toLocaleString()}
+                                </div>
+                                <div
+                                    className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
+                                    style={{wordWrap: "break-word"}}
+                                >
                                     {renderMarkdown(message)}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-48 px-4 py-2">
-                        <textarea
-                            value={inputText}
-                            onChange={(event) => setInputText(event.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
-                        />
-                        <button type="button" onClick={handleSubmit}
-                                className="bg-blue-500 text-white p-2 rounded-md mt-2">
-                            Send
-                        </button>
+                    <form
+                        onSubmit={(e) => e.preventDefault()}
+                        className="flex flex-col h-48 px-4 py-2"
+                    >
+            <textarea
+                value={inputText}
+                onChange={(event) => setInputText(event.target.value)}
+                onKeyDown={handleKeyDown}
+                className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
+            />
+                        <div className="flex justify-between">
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit(false)}
+                                className="bg-blue-500 text-white p-2 rounded-md mt-2"
+                            >
+                                Send
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit(true)}
+                                className="bg-red-500 text-white p-2 rounded-md mt-2"
+                            >
+                                Send (Other, Debug)
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
