@@ -203,71 +203,70 @@ const ChatLayout = () => {
             </div>
             {isSettingsModalOpen && (
                 // Change to HeadlessUI Dialog
-                // <Transition show={isSettingsModalOpen} as={Fragment}>
-                    <>
-                        {/* Background overlay */}
-                        <div
-                            onClick={() => setIsSettingsModalOpen(false)}
-                            className="fixed inset-0 bg-gray-800 opacity-50 z-30"
-                        ></div>
+                <>
+                    {/* Background overlay */}
+                    <div
+                        onClick={() => setIsSettingsModalOpen(false)}
+                        className="fixed inset-0 bg-gray-800 opacity-50 z-30"
+                    ></div>
 
-                        {/* Settings modal */}
-                        {/*<Transition.Child*/}
-                        {/*    as={Fragment}*/}
-                        {/*    enter="ease-out duration-300"*/}
-                        {/*    enterFrom="opacity-0 scale-95"*/}
-                        {/*    enterTo="opacity-100 scale-100"*/}
-                        {/*    leave="ease-in duration-200"*/}
-                        {/*    leaveFrom="opacity-100 scale-100"*/}
-                        {/*    leaveTo="opacity-0 scale-95"*/}
-                        {/*>*/}
-                            <div className="fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
-                                <h2 className="text-lg font-bold text-gray-400 mb-4">Settings</h2>
+                    {/* Settings modal */}
+                    <Transition
+                        show={isSettingsModalOpen}
+                        enter="transition duration-100 ease-out"
+                        enterFrom="transform scale-95 opacity-0"
+                        enterTo="transform scale-100 opacity-100"
+                        leave="transition duration-75 ease-out"
+                        leaveFrom="transform scale-100 opacity-100"
+                        leaveTo="transform scale-95 opacity-0"
+                        as={Fragment}
+                    >
+                        <div className="fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
+                            <h2 className="text-lg font-bold text-gray-400 mb-4">Settings</h2>
 
-                                {/* Settings list */}
-                                <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
-                                    <div className="flex items-center justify-between p-2">
-                                        <p className="text-gray-400">OpenAI API Key</p>
-                                        {/*<Password inputStyle="text-gray-300" value={openAIApiKey} onChange={(e) => setOpenAIApiKey(e.target.value)} feedback={false}/>*/}
+                            {/* Settings list */}
+                            <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
+                                <div className="flex items-center justify-between p-2">
+                                    <p className="text-gray-400">OpenAI API Key</p>
+                                    {/*<Password inputStyle="text-gray-300" value={openAIApiKey} onChange={(e) => setOpenAIApiKey(e.target.value)} feedback={false}/>*/}
 
-                                        <input type="password"
-                                               className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
-                                    </div>
-                                    <div className="flex items-center justify-between p-2">
-                                        <p className="text-gray-400">Toggle Option 1</p>
-                                        <Switch
-                                            checked={toggleOption1}
-                                            onChange={setToggleOption1}
-                                            className={`${
-                                                toggleOption1 ? 'bg-gray-400' : 'bg-gray-700'
-                                            } relative inline-flex h-6 w-11 items-center rounded-full border border-gray-300 border-opacity-50`}
-                                        >
+                                    <input type="password"
+                                           className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
+                                </div>
+                                <div className="flex items-center justify-between p-2">
+                                    <p className="text-gray-400">Toggle Option 1</p>
+                                    <Switch
+                                        checked={toggleOption1}
+                                        onChange={setToggleOption1}
+                                        className={`${
+                                            toggleOption1 ? 'bg-gray-400' : 'bg-gray-700'
+                                        } relative inline-flex h-6 w-11 items-center rounded-full border border-gray-300 border-opacity-50`}
+                                    >
                                     <span
                                         className={`${
                                             toggleOption1 ? 'translate-x-6' : 'translate-x-1'
                                         } inline-block h-4 w-4 transform rounded-full bg-gray-200 transition`}
                                     />
-                                        </Switch>
-                                    </div>
-                                    <div className="flex flex-col p-2">
-                                        <label htmlFor="textInput1" className="text-gray-400 mb-1">
-                                            Text Input Option
-                                        </label>
-                                        <textarea
-                                            value={textInputOption1}
-                                            onChange={(event) => setTextInputOption1(event.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-700 text-gray-300 resize-none rounded-md"
-                                        />
-                                    </div>
-
-                                    {/* Add more options here */}
-
+                                    </Switch>
                                 </div>
+                                <div className="flex flex-col p-2">
+                                    <label htmlFor="textInput1" className="text-gray-400 mb-1">
+                                        Text Input Option
+                                    </label>
+                                    <textarea
+                                        value={textInputOption1}
+                                        onChange={(event) => setTextInputOption1(event.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-700 text-gray-300 resize-none rounded-md"
+                                    />
+                                </div>
+
+                                {/* Add more options here */}
+
                             </div>
-                        {/*</Transition.Child>*/}
-                    </>
-                // </Transition>
+                        </div>
+                    </Transition>
+                </>
             )}
         </div>
     );
