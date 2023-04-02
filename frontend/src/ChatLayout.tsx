@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import "highlight.js/styles/github-dark-dimmed.css";
+import { Settings } from 'iconoir-react';
 
 type ChatMessage = {
     message: string;
@@ -141,8 +142,11 @@ const ChatLayout = () => {
                         </div>
                     </div>
                 ))}
+                <div className="absolute bottom-4 left-4 cursor-pointer">
+                    <Settings className="text-gray-500"/>
+                </div>
             </div>
-            <div className="w-3/4 bg-gray-800 rounded-r-lg">
+            <div className="w-3/4 bg-gray-800">
                 <div className="flex flex-col h-full">
                     <div
                         ref={messagesContainerRef}
