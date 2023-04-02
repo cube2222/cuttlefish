@@ -4,7 +4,7 @@ import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import "highlight.js/styles/github-dark-dimmed.css";
 import {Settings} from 'iconoir-react';
-import {Switch, Transition} from '@headlessui/react'
+import {Dialog, Listbox, Switch, Transition} from '@headlessui/react'
 
 type ChatMessage = {
     message: string;
@@ -18,6 +18,7 @@ const ChatLayout = () => {
     const [openAIApiKey, setOpenAIApiKey] = useState("");
     const [toggleOption1, setToggleOption1] = useState(false);
     const [textInputOption1, setTextInputOption1] = useState("");
+    const [model, setModel] = useState("gpt-3.5-turbo");
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -129,6 +130,8 @@ const ChatLayout = () => {
         );
     };
 
+    // @ts-ignore
+    // @ts-ignore
     return (
         <div className="flex h-screen overflow-hidden">
             <div className="w-1/4 border-r border-gray-300 border-opacity-50 p-4 bg-gray-900">
@@ -201,37 +204,61 @@ const ChatLayout = () => {
                     </form>
                 </div>
             </div>
-            {isSettingsModalOpen && (
-                // Change to HeadlessUI Dialog
-                <>
-                    {/* Background overlay */}
-                    <div
-                        onClick={() => setIsSettingsModalOpen(false)}
-                        className="fixed inset-0 bg-gray-800 opacity-50 z-30"
-                    ></div>
-
-                    {/* Settings modal */}
-                    <Transition
-                        show={isSettingsModalOpen}
-                        enter="transition duration-100 ease-out"
-                        enterFrom="transform scale-95 opacity-0"
-                        enterTo="transform scale-100 opacity-100"
-                        leave="transition duration-75 ease-out"
-                        leaveFrom="transform scale-100 opacity-100"
-                        leaveTo="transform scale-95 opacity-0"
+            <Transition show={isSettingsModalOpen} as={Fragment}>
+                <Dialog open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)}>
+                    <Transition.Child
                         as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-50"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-50"
+                        leaveTo="opacity-0"
                     >
-                        <div className="fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
-                            <h2 className="text-lg font-bold text-gray-400 mb-4">Settings</h2>
-
-                            {/* Settings list */}
+                        <div
+                            onClick={() => setIsSettingsModalOpen(false)}
+                            className="fixed inset-0 bg-gray-800 opacity-50 z-30"
+                        ></div>
+                    </Transition.Child>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
+                    >
+                        <Dialog.Panel className="fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
+                            <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">Settings</Dialog.Title>
                             <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
                                 <div className="flex items-center justify-between p-2">
                                     <p className="text-gray-400">OpenAI API Key</p>
-                                    {/*<Password inputStyle="text-gray-300" value={openAIApiKey} onChange={(e) => setOpenAIApiKey(e.target.value)} feedback={false}/>*/}
-
                                     <input type="password"
                                            className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
+                                </div>
+                                <div className="flex items-center justify-between p-2">
+                                    <p className="text-gray-400">Model</p>
+                                    <Listbox className="w-1/3 max-w-xs" value={model} onChange={setModel}>
+                                        <div className="relative">
+                                            <Listbox.Button
+                                                className="cursor-default relative w-full border border-gray-300 border-opacity-50 rounded-md bg-gray-700 text-gray-300 pl-3 py-1.5 text-left">{model}</Listbox.Button>
+                                            <Listbox.Options
+                                                className="bg-gray-700 absolute mt-1 w-full rounded-md bg-white shadow-lg max-h-60 rounded-md z-40 divide-y divide-gray-600">
+                                                {["gpt-3.5-turbo", "gpt-4"].map((model) => (
+                                                    <Listbox.Option
+                                                        key={model}
+                                                        value={model}
+                                                        className="text-gray-300 cursor-default pl-4 py-2 rounded-md hover:bg-gray-600"
+                                                    >
+                                                    <span className="block truncate">
+                                                        {model}
+                                                    </span>
+                                                    </Listbox.Option>
+                                                ))}
+                                            </Listbox.Options>
+                                        </div>
+                                    </Listbox>
                                 </div>
                                 <div className="flex items-center justify-between p-2">
                                     <p className="text-gray-400">Toggle Option 1</p>
@@ -261,13 +288,11 @@ const ChatLayout = () => {
                                     />
                                 </div>
 
-                                {/* Add more options here */}
-
                             </div>
-                        </div>
-                    </Transition>
-                </>
-            )}
+                        </Dialog.Panel>
+                    </Transition.Child>
+                </Dialog>
+            </Transition>
         </div>
     );
 };
