@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import ReactMarkdown from "react-markdown";
 import hljs from "highlight.js";
-import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import {Light as SyntaxHighlighter} from 'react-syntax-highlighter'
+import {dracula} from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import "highlight.js/styles/github-dark-dimmed.css";
 
 const ChatLayout = () => {
@@ -41,43 +41,61 @@ const ChatLayout = () => {
         },
     ];
 
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        alert("Code copied to clipboard!");
+    };
+
     const renderMarkdown = (message: string) => {
-        const renderer = {
-            code: (code: string, language: string) => {
-                const highlighted = hljs.highlightAuto(code).value;
-                return <pre><code className={`hljs ${language}`}>{highlighted}</code></pre>;
-            }
-        };
         return (
             <ReactMarkdown
                 children={message}
                 components={{
-                    code({ node, inline, className, children, ...props }) {
+                    code({node, inline, className, children, ...props}) {
                         const match = /language-(\w+)/.exec(className || '')
                         if (inline) {
                             return <code className={className} {...props}>
                                 {children}
                             </code>
                         }
-                        return match ? (
+                        return <div
+                            className="relative"
+                            onMouseEnter={(e) => {
+                                const button = e.currentTarget.querySelector('button');
+                                button.style.opacity = '100';
+                            }}
+                            onMouseLeave={(e) => {
+                                const button = e.currentTarget.querySelector('button');
+                                button.style.opacity = '0';
+                            }}
+                        >
+                            <button
+                                className="absolute top-0 right-0 bg-gray-700 text-white py-1 px-2 rounded-md opacity-0 hover:opacity-100 transition-opacity"
+                                onClick={() => copyToClipboard(children as string)}
+                            >
+                                Copy
+                            </button>
+                            {match ? (
                             <SyntaxHighlighter
+                                className="rounded-md"
                                 children={String(children).replace(/\n$/, '')}
                                 style={dracula as any}
                                 language={match[1]}
                                 PreTag="div"
                                 {...props}
                             />
-                        ) : (
+                            ) : (
                             <SyntaxHighlighter
+                                className="rounded-md"
                                 children={String(children).replace(/\n$/, '')}
                                 style={dracula as any}
                                 PreTag="div"
                                 {...props}
-                            />
-                        )
+                            />)}
+                        </div>
                     }
                 }}
-                className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block"
+                className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block max-w-full"
             />
         );
     };
@@ -109,7 +127,8 @@ const ChatLayout = () => {
                         {messages.map((message, index) => (
                             <div key={index} className="mb-4">
                                 <div className="text-gray-500 mb-1">{new Date().toLocaleString()}</div>
-                                <div className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block" style={{ wordWrap: "break-word" }}>
+                                <div className="bg-gray-700 py-2 px-4 rounded-md text-white inline-block relative max-w-full"
+                                     style={{wordWrap: "break-word"}}>
                                     {renderMarkdown(message)}
                                 </div>
                             </div>
@@ -122,7 +141,8 @@ const ChatLayout = () => {
                             onKeyDown={handleKeyDown}
                             className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
                         />
-                        <button type="button" onClick={handleSubmit} className="bg-blue-500 text-white p-2 rounded-md mt-2">
+                        <button type="button" onClick={handleSubmit}
+                                className="bg-blue-500 text-white p-2 rounded-md mt-2">
                             Send
                         </button>
                     </form>
