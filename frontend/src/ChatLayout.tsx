@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import ReactMarkdown from "react-markdown";
 import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
@@ -12,6 +12,13 @@ type ChatMessage = {
 const ChatLayout = () => {
     const [messages, setMessages] = useState<Array<ChatMessage>>([]);
     const [inputText, setInputText] = useState("");
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -118,7 +125,7 @@ const ChatLayout = () => {
 
     return (
         <div className="flex h-screen overflow-hidden">
-            <div className="w-1/3 border-r border-gray-300 border-opacity-50 p-4 bg-gray-900">
+            <div className="w-1/4 border-r border-gray-300 border-opacity-50 p-4 bg-gray-900">
                 <h2 className="font-bold text-lg mb-4">Conversations</h2>
                 {conversations.map((conversation, index) => (
                     <div
@@ -135,11 +142,14 @@ const ChatLayout = () => {
                     </div>
                 ))}
             </div>
-            <div className="w-2/3 bg-gray-800 rounded-r-lg">
+            <div className="w-3/4 bg-gray-800 rounded-r-lg">
                 <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto px-4 py-2">
+                    <div
+                        ref={messagesContainerRef}
+                        className="flex-1 overflow-y-auto px-4 py-2"
+                    >
                         {messages.map((message, index) => (
-                            <div key={index} className="mb-4">
+                            <div key={index} className={`mb-4 flex flex-col ${message.isSentByMe ? "items-end" : "items-start"}`}>
                                 <div className="text-gray-500 mb-1">
                                     {new Date().toLocaleString()}
                                 </div>
