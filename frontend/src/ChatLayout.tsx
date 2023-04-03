@@ -7,8 +7,8 @@ import {Settings} from 'iconoir-react';
 import {Dialog, Listbox, Switch, Transition} from '@headlessui/react'
 import {EventsOn} from "../wailsjs/runtime";
 import {main} from "../wailsjs/go/models";
-import ChatMessage = main.ChatMessage;
 import {Messages, SendMessage} from "../wailsjs/go/main/App";
+import ChatMessage = main.ChatMessage;
 
 const ChatLayout = () => {
     const [messages, setMessages] = useState<Array<ChatMessage>>([]);
@@ -20,11 +20,13 @@ const ChatLayout = () => {
     const [model, setModel] = useState("gpt-3.5-turbo");
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    EventsOn("conversation-42-updated", (data: any) => {
-        Messages(42).then((messages) => {
-            setMessages(messages);
-        });
-    })
+    useEffect(() => {
+        return EventsOn("conversation-42-updated", (data: any) => {
+            Messages(42).then((messages) => {
+                setMessages(messages);
+            });
+        })
+    }, []);
 
     useEffect(() => {
         if (messagesContainerRef.current) {

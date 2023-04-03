@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -76,10 +76,10 @@ func (a *App) SendMessage(conversationID int, message ChatMessage) error {
 	}
 	a.messages = append(a.messages, ChatMessage{
 		SentBySelf: false,
-		Content:    "",
+		Content:    " ",
 	})
 	gptMessage := &a.messages[len(a.messages)-1]
-	lastEmitted := time.Now().Add(-time.Second)
+	i := 0
 	for {
 		res, err := stream.Recv()
 		if err == io.EOF {
@@ -90,12 +90,11 @@ func (a *App) SendMessage(conversationID int, message ChatMessage) error {
 
 		if len(res.Choices) > 0 {
 			gptMessage.Content += res.Choices[0].Delta.Content
-		}
-		if time.Since(lastEmitted) > time.Millisecond*100 {
 			runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", 42))
-			lastEmitted = time.Now()
+			i++
 		}
 	}
+	log.Println("events: ", i)
 	return nil
 }
 
