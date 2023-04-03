@@ -8,6 +8,7 @@ import {Dialog, Listbox, Switch, Transition} from '@headlessui/react'
 
 type ChatMessage = {
     message: string;
+    date: Date;
     isSentByMe: boolean;
 };
 
@@ -38,7 +39,7 @@ const ChatLayout = () => {
         if (inputText.trim() !== "") {
             setMessages([
                 ...messages,
-                {message: inputText, isSentByMe: !debugMode},
+                {message: inputText, date: new Date(), isSentByMe: !debugMode},
             ]);
             setInputText("");
         }
@@ -125,7 +126,7 @@ const ChatLayout = () => {
                         );
                     },
                 }}
-                className={`bg-${message.isSentByMe ? "green" : "gray"}-700 py-2 px-4 rounded-md text-white inline-block max-w-full`}
+                className={`${message.isSentByMe ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.isSentByMe ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
             />
         );
     };
@@ -162,10 +163,10 @@ const ChatLayout = () => {
                     >
                         {messages.map((message, index) => (
                             <div key={index}
-                                 className={`mb-4 flex flex-col ${message.isSentByMe ? "items-end" : "items-start"}`}>
-                                <div className="text-gray-500 mb-1">
-                                    {new Date().toLocaleString()}
-                                </div>
+                                 className={`flex flex-col ${message.isSentByMe ? "items-end" : "items-start"}`}>
+                                {/*<div className="text-gray-500 mb-1">*/}
+                                {/*    {message.date.toLocaleString()}*/}
+                                {/*</div>*/}
                                 <div
                                     className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
                                     style={{wordWrap: "break-word"}}
@@ -179,12 +180,12 @@ const ChatLayout = () => {
                         onSubmit={(e) => e.preventDefault()}
                         className="flex flex-col h-48 px-4 py-2"
                     >
-            <textarea
-                value={inputText}
-                onChange={(event) => setInputText(event.target.value)}
-                onKeyDown={handleKeyDown}
-                className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
-            />
+                        <textarea
+                            value={inputText}
+                            onChange={(event) => setInputText(event.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
+                        />
                         <div className="flex justify-between">
                             <button
                                 type="button"
@@ -239,26 +240,28 @@ const ChatLayout = () => {
                                 </div>
                                 <div className="flex items-center justify-between p-2">
                                     <p className="text-gray-400">Model</p>
-                                    <Listbox className="w-1/3 max-w-xs" value={model} onChange={setModel}>
-                                        <div className="relative">
-                                            <Listbox.Button
-                                                className="duration-150 cursor-default relative w-full border border-gray-300 border-opacity-50 rounded-md bg-gray-700 text-gray-300 pl-3 py-1.5 text-left hover:bg-gray-600">{model}</Listbox.Button>
-                                            <Listbox.Options
-                                                className="bg-gray-700 absolute mt-1 w-full rounded-md bg-white shadow-lg max-h-60 rounded-md z-40 divide-y divide-gray-600">
-                                                {["gpt-3.5-turbo", "gpt-4"].map((model) => (
-                                                    <Listbox.Option
-                                                        key={model}
-                                                        value={model}
-                                                        className="duration-150 text-gray-300 cursor-default pl-4 py-2 rounded-md hover:bg-gray-600"
-                                                    >
+                                    <div className="w-1/3 max-w-xs">
+                                        <Listbox value={model} onChange={setModel}>
+                                            <div className="relative">
+                                                <Listbox.Button
+                                                    className="duration-150 cursor-default relative w-full border border-gray-300 border-opacity-50 rounded-md bg-gray-700 text-gray-300 pl-3 py-1.5 text-left hover:bg-gray-600">{model}</Listbox.Button>
+                                                <Listbox.Options
+                                                    className="bg-gray-700 absolute mt-1 w-full rounded-md bg-white shadow-lg max-h-60 rounded-md z-40 divide-y divide-gray-600">
+                                                    {["gpt-3.5-turbo", "gpt-4"].map((model) => (
+                                                        <Listbox.Option
+                                                            key={model}
+                                                            value={model}
+                                                            className="duration-150 text-gray-300 cursor-default pl-4 py-2 rounded-md hover:bg-gray-600"
+                                                        >
                                                     <span className="block truncate">
                                                         {model}
                                                     </span>
-                                                    </Listbox.Option>
-                                                ))}
-                                            </Listbox.Options>
-                                        </div>
-                                    </Listbox>
+                                                        </Listbox.Option>
+                                                    ))}
+                                                </Listbox.Options>
+                                            </div>
+                                        </Listbox>
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between p-2">
                                     <p className="text-gray-400">Toggle Option 1</p>
