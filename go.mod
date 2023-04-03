@@ -2,7 +2,10 @@ module changeme
 
 go 1.18
 
-require github.com/wailsapp/wails/v2 v2.4.1
+require (
+	github.com/sashabaranov/go-openai v1.5.8
+	github.com/wailsapp/wails/v2 v2.4.1
+)
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect

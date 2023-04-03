@@ -1,12 +1,10 @@
 import {useState} from "react";
-import {Greet} from "../wailsjs/go/main/App";
+import {Messages} from "../wailsjs/go/main/App";
 import "./ChatLayout";
 import ChatLayout from "./ChatLayout";
 import "primeicons/primeicons.css";
 
 function App() {
-    const [text, updateText] = useState('Who are you?');
-
     return <ChatLayout/>;
     // return (
     //     <div className="min-h-screen bg-white grid grid-cols-1 place-items-center justify-items-center mx-auto py-8">

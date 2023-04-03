@@ -5,12 +5,10 @@ import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import "highlight.js/styles/github-dark-dimmed.css";
 import {Settings} from 'iconoir-react';
 import {Dialog, Listbox, Switch, Transition} from '@headlessui/react'
-
-type ChatMessage = {
-    message: string;
-    date: Date;
-    isSentByMe: boolean;
-};
+import {EventsOn} from "../wailsjs/runtime";
+import {main} from "../wailsjs/go/models";
+import ChatMessage = main.ChatMessage;
+import {Messages, SendMessage} from "../wailsjs/go/main/App";
 
 const ChatLayout = () => {
     const [messages, setMessages] = useState<Array<ChatMessage>>([]);
@@ -21,6 +19,12 @@ const ChatLayout = () => {
     const [textInputOption1, setTextInputOption1] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    EventsOn("conversation-42-updated", (data: any) => {
+        Messages(42).then((messages) => {
+            setMessages(messages);
+        });
+    })
 
     useEffect(() => {
         if (messagesContainerRef.current) {
@@ -37,10 +41,7 @@ const ChatLayout = () => {
 
     const handleSubmit = (debugMode: boolean = false) => {
         if (inputText.trim() !== "") {
-            setMessages([
-                ...messages,
-                {message: inputText, date: new Date(), isSentByMe: !debugMode},
-            ]);
+            SendMessage(42, {message: inputText, sentBySelf: !debugMode});
             setInputText("");
         }
     };
@@ -126,7 +127,7 @@ const ChatLayout = () => {
                         );
                     },
                 }}
-                className={`${message.isSentByMe ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.isSentByMe ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
+                className={`${message.sentBySelf ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.sentBySelf ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
             />
         );
     };
@@ -163,7 +164,7 @@ const ChatLayout = () => {
                     >
                         {messages.map((message, index) => (
                             <div key={index}
-                                 className={`flex flex-col ${message.isSentByMe ? "items-end" : "items-start"}`}>
+                                 className={`flex flex-col ${message.sentBySelf ? "items-end" : "items-start"}`}>
                                 {/*<div className="text-gray-500 mb-1">*/}
                                 {/*    {message.date.toLocaleString()}*/}
                                 {/*</div>*/}
