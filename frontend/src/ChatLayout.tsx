@@ -6,9 +6,9 @@ import "highlight.js/styles/github-dark-dimmed.css";
 import {Settings} from 'iconoir-react';
 import {Dialog, Listbox, Switch, Transition} from '@headlessui/react'
 import {EventsOn} from "../wailsjs/runtime";
-import {main} from "../wailsjs/go/models";
-import {Messages, SendMessage} from "../wailsjs/go/main/App";
-import ChatMessage = main.ChatMessage;
+import {database} from "../wailsjs/go/models";
+import {Messages, ResetConversation, SendMessage} from "../wailsjs/go/main/App";
+import ChatMessage = database.ChatMessage;
 
 const ChatLayout = () => {
     const [messages, setMessages] = useState<Array<ChatMessage>>([]);
@@ -19,6 +19,12 @@ const ChatLayout = () => {
     const [textInputOption1, setTextInputOption1] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        Messages(42).then((messages) => {
+            setMessages(messages);
+        });
+    }, []);
 
     useEffect(() => {
         return EventsOn("conversation-42-updated", (data: any) => {
@@ -43,7 +49,7 @@ const ChatLayout = () => {
 
     const handleSubmit = (debugMode: boolean = false) => {
         if (inputText.trim() !== "") {
-            SendMessage(42, {message: inputText, sentBySelf: !debugMode});
+            SendMessage(42, {content: inputText, sentBySelf: !debugMode});
             setInputText("");
         }
     };
@@ -74,7 +80,7 @@ const ChatLayout = () => {
     const renderMarkdown = (message: ChatMessage) => {
         return (
             <ReactMarkdown
-                children={message.message}
+                children={message.content}
                 components={{
                     code({node, inline, className, children, ...props}) {
                         const match = /language-(\w+)/.exec(className || "");
@@ -87,7 +93,7 @@ const ChatLayout = () => {
                         }
                         return (
                             <div
-                                className="relative"
+                                className="relative py-2"
                                 onMouseEnter={(e) => {
                                     const button = e.currentTarget.querySelector("button");
                                     if (button !== null) {
@@ -199,8 +205,15 @@ const ChatLayout = () => {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleSubmit(true)}
+                                onClick={() => ResetConversation(42)}
                                 className="bg-red-500 text-white p-2 rounded-md mt-2"
+                            >
+                                Reset
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit(true)}
+                                className="bg-orange-500 text-white p-2 rounded-md mt-2"
                             >
                                 Send (Other, Debug)
                             </button>
