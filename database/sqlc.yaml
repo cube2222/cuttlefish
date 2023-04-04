@@ -6,6 +6,6 @@ sql:
     gen:
       go:
         package: "database"
-        out: "database"
+        out: "."
         emit_json_tags: true
         json_tags_case_style: camel

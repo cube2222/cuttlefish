@@ -19,7 +19,7 @@ var assets embed.FS
 //go:embed build/appicon.png
 var icon []byte
 
-//go:embed schema.sql
+//go:embed database/schema.sql
 var ddl string
 
 func main() {
