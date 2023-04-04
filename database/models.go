@@ -4,10 +4,19 @@
 
 package database
 
-import ()
+import (
+	"time"
+)
 
-type ChatMessage struct {
-	ID         int64  `json:"id"`
-	Content    string `json:"content"`
-	SentBySelf bool   `json:"sentBySelf"`
+type Conversation struct {
+	ID              int       `json:"id"`
+	Title           string    `json:"title"`
+	LastMessageTime time.Time `json:"lastMessageTime"`
+}
+
+type Message struct {
+	ID             int    `json:"id"`
+	ConversationID int    `json:"conversationID"`
+	Content        string `json:"content"`
+	SentBySelf     bool   `json:"sentBySelf"`
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -53,17 +54,17 @@ func (a *App) shutdown(ctx context.Context) {
 	// Perform your teardown here
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Messages(conversationID int) ([]database.ChatMessage, error) {
-	messages, err := a.queries.ListMessages(a.ctx)
-	if err != nil {
-		return nil, err
-	}
-	if messages == nil {
-		messages = []database.ChatMessage{}
-	}
-	return messages, nil
+func (a *App) Messages(conversationID int) ([]*database.Message, error) {
+	return a.queries.ListMessages(a.ctx, conversationID)
 }
+
+func (a *App) Conversations() ([]*database.Conversation, error) {
+	return a.queries.ListConversations(a.ctx)
+}
+
+// func (a *App) CreateConversation(params database.CreateConversationParams) (*database.Conversation, error) {
+// 	return a.queries.CreateConversation(a.ctx, params)
+// }
 
 func (a *App) ResetConversation(conversationID int) error {
 	if err := a.queries.DeleteMessages(a.ctx); err != nil {
@@ -73,11 +74,33 @@ func (a *App) ResetConversation(conversationID int) error {
 	return nil
 }
 
-func (a *App) SendMessage(conversationID int, params database.CreateMessageParams) (err error) {
-	if _, err := a.queries.CreateMessage(a.ctx, params); err != nil {
+func (a *App) SendMessage(conversationID *int, content string) (err error) {
+	// TODO: setConversation callback in both the chat view and the conversations sidebar.
+	//		 In one it will "open" the newly created conversation. In the other it will open the selected conversation.
+	//		 Also, we need to be listening for "conversations-updated".
+	if conversationID == nil {
+		title := content
+		if len(title) > 20 {
+			title = title[:13] + "..."
+		}
+		conversation, err := a.queries.CreateConversation(a.ctx, database.CreateConversationParams{
+			Title:           title,
+			LastMessageTime: time.Now(),
+		})
+		if err != nil {
+			return err
+		}
+		conversationID = &conversation.ID
+	}
+
+	if _, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+		ConversationID: *conversationID,
+		Content:        content,
+		SentBySelf:     true,
+	}); err != nil {
 		return err
 	}
-	allMessages, err := a.queries.ListMessages(a.ctx)
+	allMessages, err := a.queries.ListMessages(a.ctx, *conversationID)
 	if err != nil {
 		return err
 	}
@@ -93,8 +116,9 @@ func (a *App) SendMessage(conversationID int, params database.CreateMessageParam
 		return fmt.Errorf("couldn't create chat completion stream: %w", err)
 	}
 	gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
-		Content:    "",
-		SentBySelf: false,
+		ConversationID: *conversationID,
+		Content:        "",
+		SentBySelf:     false,
 	})
 	if err != nil {
 		return err
@@ -121,7 +145,7 @@ func (a *App) SendMessage(conversationID int, params database.CreateMessageParam
 	return nil
 }
 
-func MessagesToGPTMessages(messages []database.ChatMessage) []openai.ChatCompletionMessage {
+func MessagesToGPTMessages(messages []*database.Message) []openai.ChatCompletionMessage {
 	var gptMessages []openai.ChatCompletionMessage
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,

@@ -1,11 +1,17 @@
 -- name: ListMessages :many
-SELECT * FROM chat_messages ORDER BY id;
+SELECT * FROM messages WHERE conversation_id = ? ORDER BY id;
 
 -- name: CreateMessage :one
-INSERT INTO chat_messages (content, sent_by_self) VALUES (?, ?) RETURNING *;
+INSERT INTO messages (conversation_id, content, sent_by_self) VALUES (?, ?, ?) RETURNING *;
 
 -- name: AppendMessage :one
-UPDATE chat_messages SET content = content || ? WHERE id = ? RETURNING *;
+UPDATE messages SET content = content || ? WHERE id = ? RETURNING *;
 
 -- name: DeleteMessages :exec
-DELETE FROM chat_messages;
+DELETE FROM messages;
+
+-- name: ListConversations :many
+SELECT * FROM conversations ORDER BY last_message_time DESC;
+
+-- name: CreateConversation :one
+INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING *;

@@ -7,42 +7,70 @@ package database
 
 import (
 	"context"
+	"time"
 )
 
 const appendMessage = `-- name: AppendMessage :one
-UPDATE chat_messages SET content = content || ? WHERE id = ? RETURNING id, content, sent_by_self
+UPDATE messages SET content = content || ? WHERE id = ? RETURNING id, conversation_id, content, sent_by_self
 `
 
 type AppendMessageParams struct {
 	Content string `json:"content"`
-	ID      int64  `json:"id"`
+	ID      int    `json:"id"`
 }
 
-func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (ChatMessage, error) {
+func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (*Message, error) {
 	row := q.db.QueryRowContext(ctx, appendMessage, arg.Content, arg.ID)
-	var i ChatMessage
-	err := row.Scan(&i.ID, &i.Content, &i.SentBySelf)
-	return i, err
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.ConversationID,
+		&i.Content,
+		&i.SentBySelf,
+	)
+	return &i, err
+}
+
+const createConversation = `-- name: CreateConversation :one
+INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time
+`
+
+type CreateConversationParams struct {
+	Title           string    `json:"title"`
+	LastMessageTime time.Time `json:"lastMessageTime"`
+}
+
+func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (*Conversation, error) {
+	row := q.db.QueryRowContext(ctx, createConversation, arg.Title, arg.LastMessageTime)
+	var i Conversation
+	err := row.Scan(&i.ID, &i.Title, &i.LastMessageTime)
+	return &i, err
 }
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO chat_messages (content, sent_by_self) VALUES (?, ?) RETURNING id, content, sent_by_self
+INSERT INTO messages (conversation_id, content, sent_by_self) VALUES (?, ?, ?) RETURNING id, conversation_id, content, sent_by_self
 `
 
 type CreateMessageParams struct {
-	Content    string `json:"content"`
-	SentBySelf bool   `json:"sentBySelf"`
+	ConversationID int    `json:"conversationID"`
+	Content        string `json:"content"`
+	SentBySelf     bool   `json:"sentBySelf"`
 }
 
-func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatMessage, error) {
-	row := q.db.QueryRowContext(ctx, createMessage, arg.Content, arg.SentBySelf)
-	var i ChatMessage
-	err := row.Scan(&i.ID, &i.Content, &i.SentBySelf)
-	return i, err
+func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (*Message, error) {
+	row := q.db.QueryRowContext(ctx, createMessage, arg.ConversationID, arg.Content, arg.SentBySelf)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.ConversationID,
+		&i.Content,
+		&i.SentBySelf,
+	)
+	return &i, err
 }
 
 const deleteMessages = `-- name: DeleteMessages :exec
-DELETE FROM chat_messages
+DELETE FROM messages
 `
 
 func (q *Queries) DeleteMessages(ctx context.Context) error {
@@ -50,23 +78,55 @@ func (q *Queries) DeleteMessages(ctx context.Context) error {
 	return err
 }
 
-const listMessages = `-- name: ListMessages :many
-SELECT id, content, sent_by_self FROM chat_messages ORDER BY id
+const listConversations = `-- name: ListConversations :many
+SELECT id, title, last_message_time FROM conversations ORDER BY last_message_time DESC
 `
 
-func (q *Queries) ListMessages(ctx context.Context) ([]ChatMessage, error) {
-	rows, err := q.db.QueryContext(ctx, listMessages)
+func (q *Queries) ListConversations(ctx context.Context) ([]*Conversation, error) {
+	rows, err := q.db.QueryContext(ctx, listConversations)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChatMessage
+	items := []*Conversation{}
 	for rows.Next() {
-		var i ChatMessage
-		if err := rows.Scan(&i.ID, &i.Content, &i.SentBySelf); err != nil {
+		var i Conversation
+		if err := rows.Scan(&i.ID, &i.Title, &i.LastMessageTime); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMessages = `-- name: ListMessages :many
+SELECT id, conversation_id, content, sent_by_self FROM messages WHERE conversation_id = ? ORDER BY id
+`
+
+func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]*Message, error) {
+	rows, err := q.db.QueryContext(ctx, listMessages, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Message{}
+	for rows.Next() {
+		var i Message
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.Content,
+			&i.SentBySelf,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

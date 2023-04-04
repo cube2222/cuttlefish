@@ -9,3 +9,8 @@ sql:
         out: "."
         emit_json_tags: true
         json_tags_case_style: camel
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        overrides:
+          - db_type: "INTEGER"
+            go_type: "int"
