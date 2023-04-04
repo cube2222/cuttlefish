@@ -79,7 +79,6 @@ func (a *App) SendMessage(conversationID int, message ChatMessage) error {
 		Content:    " ",
 	})
 	gptMessage := &a.messages[len(a.messages)-1]
-	i := 0
 	for {
 		res, err := stream.Recv()
 		if err == io.EOF {
@@ -91,10 +90,8 @@ func (a *App) SendMessage(conversationID int, message ChatMessage) error {
 		if len(res.Choices) > 0 {
 			gptMessage.Content += res.Choices[0].Delta.Content
 			runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", 42))
-			i++
 		}
 	}
-	log.Println("events: ", i)
 	return nil
 }
 
