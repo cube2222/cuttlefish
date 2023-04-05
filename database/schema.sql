@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS conversations (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
-  last_message_time DATETIME NOT NULL
+  last_message_time DATETIME NOT NULL,
+  system_prompt TEXT NOT NULL DEFAULT 'You are a helpful assistant. Respond to the queries as best as you can.'
 );

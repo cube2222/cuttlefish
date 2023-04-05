@@ -12,6 +12,7 @@ type Conversation struct {
 	ID              int       `json:"id"`
 	Title           string    `json:"title"`
 	LastMessageTime time.Time `json:"lastMessageTime"`
+	SystemPrompt    string    `json:"systemPrompt"`
 }
 
 type Message struct {

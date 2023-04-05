@@ -32,7 +32,7 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (*
 }
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time
+INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time, system_prompt
 `
 
 type CreateConversationParams struct {
@@ -43,7 +43,12 @@ type CreateConversationParams struct {
 func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (*Conversation, error) {
 	row := q.db.QueryRowContext(ctx, createConversation, arg.Title, arg.LastMessageTime)
 	var i Conversation
-	err := row.Scan(&i.ID, &i.Title, &i.LastMessageTime)
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.LastMessageTime,
+		&i.SystemPrompt,
+	)
 	return &i, err
 }
 
@@ -79,7 +84,7 @@ func (q *Queries) DeleteMessages(ctx context.Context) error {
 }
 
 const listConversations = `-- name: ListConversations :many
-SELECT id, title, last_message_time FROM conversations ORDER BY last_message_time DESC
+SELECT id, title, last_message_time, system_prompt FROM conversations ORDER BY last_message_time DESC
 `
 
 func (q *Queries) ListConversations(ctx context.Context) ([]*Conversation, error) {
@@ -91,7 +96,12 @@ func (q *Queries) ListConversations(ctx context.Context) ([]*Conversation, error
 	items := []*Conversation{}
 	for rows.Next() {
 		var i Conversation
-		if err := rows.Scan(&i.ID, &i.Title, &i.LastMessageTime); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.LastMessageTime,
+			&i.SystemPrompt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)

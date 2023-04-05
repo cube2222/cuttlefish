@@ -12,6 +12,9 @@ interface Props {
 }
 
 const Chat = ({}: Props) => {
+    // TODO: ConversationID null if this is a new chat. Then a message should create the conversation.
+    //       Remember you'll want stuff like conversation templates passed too.
+
     const [messages, setMessages] = useState<Array<Message>>([]);
     const [inputText, setInputText] = useState("");
     const messagesContainerRef = useRef<HTMLDivElement>(null);

@@ -111,6 +111,7 @@ func (a *App) SendMessage(conversationID *int, content string) (err error) {
 		Temperature: 0.7,
 		TopP:        1,
 		Messages:    MessagesToGPTMessages(allMessages),
+		// TODO: For tools you'll need to pass "Observation" as a stop phrase.
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't create chat completion stream: %w", err)
