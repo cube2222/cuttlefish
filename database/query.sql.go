@@ -19,7 +19,7 @@ type AppendMessageParams struct {
 	ID      int    `json:"id"`
 }
 
-func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (*Message, error) {
+func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (Message, error) {
 	row := q.db.QueryRowContext(ctx, appendMessage, arg.Content, arg.ID)
 	var i Message
 	err := row.Scan(
@@ -28,7 +28,7 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (*
 		&i.Content,
 		&i.SentBySelf,
 	)
-	return &i, err
+	return i, err
 }
 
 const createConversation = `-- name: CreateConversation :one
@@ -40,7 +40,7 @@ type CreateConversationParams struct {
 	LastMessageTime time.Time `json:"lastMessageTime"`
 }
 
-func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (*Conversation, error) {
+func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error) {
 	row := q.db.QueryRowContext(ctx, createConversation, arg.Title, arg.LastMessageTime)
 	var i Conversation
 	err := row.Scan(
@@ -49,7 +49,7 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 		&i.LastMessageTime,
 		&i.SystemPrompt,
 	)
-	return &i, err
+	return i, err
 }
 
 const createMessage = `-- name: CreateMessage :one
@@ -62,7 +62,7 @@ type CreateMessageParams struct {
 	SentBySelf     bool   `json:"sentBySelf"`
 }
 
-func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (*Message, error) {
+func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
 	row := q.db.QueryRowContext(ctx, createMessage, arg.ConversationID, arg.Content, arg.SentBySelf)
 	var i Message
 	err := row.Scan(
@@ -71,7 +71,7 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (*
 		&i.Content,
 		&i.SentBySelf,
 	)
-	return &i, err
+	return i, err
 }
 
 const deleteMessages = `-- name: DeleteMessages :exec
@@ -87,13 +87,13 @@ const listConversations = `-- name: ListConversations :many
 SELECT id, title, last_message_time, system_prompt FROM conversations ORDER BY last_message_time DESC
 `
 
-func (q *Queries) ListConversations(ctx context.Context) ([]*Conversation, error) {
+func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error) {
 	rows, err := q.db.QueryContext(ctx, listConversations)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Conversation{}
+	items := []Conversation{}
 	for rows.Next() {
 		var i Conversation
 		if err := rows.Scan(
@@ -104,7 +104,7 @@ func (q *Queries) ListConversations(ctx context.Context) ([]*Conversation, error
 		); err != nil {
 			return nil, err
 		}
-		items = append(items, &i)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -119,13 +119,13 @@ const listMessages = `-- name: ListMessages :many
 SELECT id, conversation_id, content, sent_by_self FROM messages WHERE conversation_id = ? ORDER BY id
 `
 
-func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]*Message, error) {
+func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]Message, error) {
 	rows, err := q.db.QueryContext(ctx, listMessages, conversationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*Message{}
+	items := []Message{}
 	for rows.Next() {
 		var i Message
 		if err := rows.Scan(
@@ -136,7 +136,7 @@ func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]*Mess
 		); err != nil {
 			return nil, err
 		}
-		items = append(items, &i)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

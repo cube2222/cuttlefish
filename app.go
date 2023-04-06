@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -54,11 +55,11 @@ func (a *App) shutdown(ctx context.Context) {
 	// Perform your teardown here
 }
 
-func (a *App) Messages(conversationID int) ([]*database.Message, error) {
+func (a *App) Messages(conversationID int) ([]database.Message, error) {
 	return a.queries.ListMessages(a.ctx, conversationID)
 }
 
-func (a *App) Conversations() ([]*database.Conversation, error) {
+func (a *App) Conversations() ([]database.Conversation, error) {
 	return a.queries.ListConversations(a.ctx)
 }
 
@@ -70,15 +71,15 @@ func (a *App) ResetConversation(conversationID int) error {
 	if err := a.queries.DeleteMessages(a.ctx); err != nil {
 		return err
 	}
-	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", 42))
+	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 	return nil
 }
 
-func (a *App) SendMessage(conversationID *int, content string) (err error) {
+func (a *App) SendMessage(conversationID int, content string) (database.Message, error) {
 	// TODO: setConversation callback in both the chat view and the conversations sidebar.
 	//		 In one it will "open" the newly created conversation. In the other it will open the selected conversation.
 	//		 Also, we need to be listening for "conversations-updated".
-	if conversationID == nil {
+	if conversationID == -1 {
 		title := content
 		if len(title) > 20 {
 			title = title[:13] + "..."
@@ -88,65 +89,76 @@ func (a *App) SendMessage(conversationID *int, content string) (err error) {
 			LastMessageTime: time.Now(),
 		})
 		if err != nil {
-			return err
+			return database.Message{}, err
 		}
-		conversationID = &conversation.ID
+		conversationID = conversation.ID
 	}
 
-	if _, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
-		ConversationID: *conversationID,
+	msg, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+		ConversationID: conversationID,
 		Content:        content,
 		SentBySelf:     true,
-	}); err != nil {
-		return err
-	}
-	allMessages, err := a.queries.ListMessages(a.ctx, *conversationID)
-	if err != nil {
-		return err
-	}
-	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", 42))
-	stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
-		Model:       openai.GPT3Dot5Turbo,
-		MaxTokens:   500,
-		Temperature: 0.7,
-		TopP:        1,
-		Messages:    MessagesToGPTMessages(allMessages),
-		// TODO: For tools you'll need to pass "Observation" as a stop phrase.
 	})
 	if err != nil {
-		return fmt.Errorf("couldn't create chat completion stream: %w", err)
+		return database.Message{}, err
 	}
-	gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
-		ConversationID: *conversationID,
-		Content:        "",
-		SentBySelf:     false,
-	})
-	if err != nil {
-		return err
-	}
-	for {
-		res, err := stream.Recv()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("couldn't receive from chat completion stream: %w", err)
-		}
+	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 
-		if len(res.Choices) > 0 {
-			gptMessage.Content += res.Choices[0].Delta.Content
-			if _, err := a.queries.AppendMessage(a.ctx, database.AppendMessageParams{
-				ID:      gptMessage.ID,
-				Content: res.Choices[0].Delta.Content,
-			}); err != nil {
+	go func() {
+		if err := func() error {
+			allMessages, err := a.queries.ListMessages(a.ctx, conversationID)
+			if err != nil {
 				return err
 			}
-			runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", 42))
+			stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+				Model:       openai.GPT3Dot5Turbo,
+				MaxTokens:   500,
+				Temperature: 0.7,
+				TopP:        1,
+				Messages:    MessagesToGPTMessages(allMessages),
+				// TODO: For tools you'll need to pass "Observation" as a stop phrase.
+			})
+			if err != nil {
+				return fmt.Errorf("couldn't create chat completion stream: %w", err)
+			}
+			gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+				ConversationID: conversationID,
+				Content:        "",
+				SentBySelf:     false,
+			})
+			if err != nil {
+				return err
+			}
+			for {
+				res, err := stream.Recv()
+				if err == io.EOF {
+					break
+				} else if err != nil {
+					return fmt.Errorf("couldn't receive from chat completion stream: %w", err)
+				}
+
+				if len(res.Choices) > 0 {
+					gptMessage.Content += res.Choices[0].Delta.Content
+					if _, err := a.queries.AppendMessage(a.ctx, database.AppendMessageParams{
+						ID:      gptMessage.ID,
+						Content: res.Choices[0].Delta.Content,
+					}); err != nil {
+						return err
+					}
+					runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
+				}
+			}
+			return nil
+		}(); err != nil {
+			runtime.EventsEmit(a.ctx, "async-error", err.Error())
+			log.Println("error generating streaming chatgpt response:", err)
 		}
-	}
-	return nil
+	}()
+
+	return msg, nil
 }
 
-func MessagesToGPTMessages(messages []*database.Message) []openai.ChatCompletionMessage {
+func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
 	var gptMessages []openai.ChatCompletionMessage
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
@@ -165,3 +177,5 @@ func MessagesToGPTMessages(messages []*database.Message) []openai.ChatCompletion
 	}
 	return gptMessages
 }
+
+// TODO: Add event "async error" for background processing.

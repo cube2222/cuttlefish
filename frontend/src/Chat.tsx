@@ -8,10 +8,11 @@ import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 interface Props {
-
+    conversationID: number | null;
+    setConversationID: (conversationID: number) => void;
 }
 
-const Chat = ({}: Props) => {
+const Chat = ({conversationID, setConversationID}: Props) => {
     // TODO: ConversationID null if this is a new chat. Then a message should create the conversation.
     //       Remember you'll want stuff like conversation templates passed too.
 
@@ -20,36 +21,43 @@ const Chat = ({}: Props) => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        Messages(42).then((messages) => {
+        if (conversationID === null) {
+            return;
+        }
+        Messages(conversationID).then((messages) => {
             setMessages(messages);
         });
-    }, []);
+    }, [conversationID]);
 
     useEffect(() => {
-        return EventsOn("conversation-42-updated", (data: any) => {
-            Messages(42).then((messages) => {
+        if (conversationID === null) {
+            return;
+        }
+        return EventsOn(`conversation-${conversationID}-updated`, (data: any) => {
+            Messages(conversationID).then((messages) => {
                 setMessages(messages);
             });
         })
-    }, []);
+    }, [conversationID]);
 
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [messages]); // TODO: Change dependency from messages to something like "sent message" so it doesn't happen on assistant responses.
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            handleSubmit();
+            await handleSubmit();
         }
     };
 
-    const handleSubmit = (debugMode: boolean = false) => {
+    const handleSubmit = async (debugMode: boolean = false) => {
         if (inputText.trim() !== "") {
-            SendMessage(42, inputText);
+            let message = await SendMessage(conversationID !== null ? conversationID : -1, inputText);
             setInputText("");
+            setConversationID(message.conversationID);
         }
     };
 
@@ -160,13 +168,13 @@ const Chat = ({}: Props) => {
                     >
                         Send
                     </button>
-                    <button
+                    {conversationID !== null && <button
                         type="button"
-                        onClick={() => ResetConversation(42)}
+                        onClick={() => ResetConversation(conversationID)}
                         className="bg-red-500 text-white p-2 rounded-md mt-2"
                     >
                         Reset
-                    </button>
+                    </button>}
                     <button
                         type="button"
                         onClick={() => handleSubmit(true)}
