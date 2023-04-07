@@ -26,7 +26,7 @@ type App struct {
 	openAICli *openai.Client
 	queries   *database.Queries
 
-	sync.Mutex
+	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
 }
 
@@ -133,9 +133,9 @@ func (a *App) runChainOfMessages(conversationID int) error {
 	genCtx, cancelGeneration := context.WithCancel(a.ctx)
 	defer cancelGeneration()
 
-	a.Lock()
+	a.m.Lock()
 	a.generationContextCancel[conversationID] = cancelGeneration
-	a.Unlock()
+	a.m.Unlock()
 
 	if err := a.queries.MarkGenerationStarted(genCtx, conversationID); err != nil {
 		return err
@@ -354,8 +354,8 @@ Please respond to the user's messages as best as you can.`
 }
 
 func (a *App) CancelGeneration(conversationID int) {
-	a.Lock()
-	defer a.Unlock()
+	a.m.Lock()
+	defer a.m.Unlock()
 	cancel, ok := a.generationContextCancel[conversationID]
 	if !ok {
 		return
