@@ -36,8 +36,8 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
     return (
         <div className="flex flex-col h-full w-1/4 border-r border-gray-300 border-opacity-50 bg-gray-900 p-2">
             <div className="flex-1 overflow-hidden flex flex-col w-full border rounded-md border-gray-300 border-opacity-50">
-                <h2 className="font-bold text-lg mb-4 text-gray-300 p-2">Conversations</h2>
-                <div className="overflow-y-auto divide-y divide-gray-700">
+                <h2 className="font-bold text-lg text-gray-300 p-3">Conversations</h2>
+                <div className="overflow-y-auto divide-y divide-gray-700 border-t border-gray-300 border-opacity-50">
                     <div
                         className={`flex items-center cursor-pointer py-2 hover:bg-gray-700`}
                         onClick={() => {
