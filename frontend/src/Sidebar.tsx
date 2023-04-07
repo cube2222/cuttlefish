@@ -34,8 +34,8 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
     }
 
     return (
-        <div className="h-full w-1/4 border-r border-gray-300 border-opacity-50 bg-gray-900 p-2">
-            <div className="flex flex-col h-5/6 w-full border rounded-md border-gray-300 border-opacity-50">
+        <div className="flex flex-col h-full w-1/4 border-r border-gray-300 border-opacity-50 bg-gray-900 p-2">
+            <div className="flex-1 overflow-hidden flex flex-col w-full border rounded-md border-gray-300 border-opacity-50">
                 <h2 className="font-bold text-lg mb-4 text-gray-300 p-2">Conversations</h2>
                 <div className="overflow-y-auto divide-y divide-gray-700">
                     <div
@@ -71,6 +71,7 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
                     ))}
                 </div>
             </div>
+            <div className="h-12"></div>
             <SettingsButton className="absolute bottom-4 left-4"/>
         </div>
     )
