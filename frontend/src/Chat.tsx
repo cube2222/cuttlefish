@@ -5,9 +5,9 @@ import {EventsOn} from "../wailsjs/runtime";
 import ReactMarkdown from "react-markdown";
 import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
+import {MinusCircle} from "iconoir-react";
 import Message = database.Message;
 import Conversation = database.Conversation;
-import {MinusCircle} from "iconoir-react";
 
 interface Props {
     conversationID: number | null;
@@ -164,11 +164,12 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                         </div>
                     ))}
                 </div>
-                {curConversation?.generating && <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400" onClick={async () => {
-                    if (curConversation !== null) {
-                        await CancelGeneration(curConversation.id)
-                    }
-                }}/>}
+                {curConversation?.generating &&
+                  <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400" onClick={async () => {
+                      if (curConversation !== null) {
+                          await CancelGeneration(curConversation.id)
+                      }
+                  }}/>}
             </div>
             <form
                 onSubmit={(e) => e.preventDefault()}
