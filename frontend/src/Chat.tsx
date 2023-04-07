@@ -1,4 +1,4 @@
-import {Messages, SendMessage} from "../wailsjs/go/main/App";
+import {CancelGeneration, GetConversation, Messages, SendMessage} from "../wailsjs/go/main/App";
 import React, {useEffect, useRef, useState} from "react";
 import {database} from "../wailsjs/go/models";
 import Message = database.Message;
@@ -6,6 +6,8 @@ import {EventsOn} from "../wailsjs/runtime";
 import ReactMarkdown from "react-markdown";
 import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
+import Conversation = database.Conversation;
+import {MinusCircle} from "iconoir-react";
 
 interface Props {
     conversationID: number | null;
@@ -17,6 +19,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
     //       Remember you'll want stuff like conversation templates passed too.
 
     const [messages, setMessages] = useState<Array<Message>>([]);
+    const [curConversation, setCurConversation] = useState<database.Conversation | null>(null);
     const [inputText, setInputText] = useState("");
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +31,9 @@ const Chat = ({conversationID, setConversationID}: Props) => {
         Messages(conversationID).then((messages) => {
             setMessages(messages);
         });
+        GetConversation(conversationID).then((conversation: Conversation) => {
+            setCurConversation(conversation);
+        })
     }, [conversationID]);
 
     useEffect(() => {
@@ -39,6 +45,9 @@ const Chat = ({conversationID, setConversationID}: Props) => {
             Messages(conversationID).then((messages) => {
                 setMessages(messages);
             });
+            GetConversation(conversationID).then((conversation: Conversation) => {
+                setCurConversation(conversation);
+            })
         })
     }, [conversationID]);
 
@@ -136,7 +145,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
         <div className="flex flex-col h-full">
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto px-4 py-2"
+                className="relative flex-1 overflow-y-auto px-4 py-2"
             >
                 {messages.map((message, index) => (
                     <div key={index}
@@ -153,6 +162,11 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                         </div>
                     </div>
                 ))}
+                {curConversation?.generating && <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400" onClick={async () => {
+                    if (curConversation !== null) {
+                        await CancelGeneration(curConversation.id)
+                    }
+                }}/>}
             </div>
             <form
                 onSubmit={(e) => e.preventDefault()}

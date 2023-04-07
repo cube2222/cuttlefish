@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,18 +22,21 @@ import (
 
 // App struct
 type App struct {
-	ctx context.Context
-	sync.Mutex
+	ctx       context.Context
 	openAICli *openai.Client
 	queries   *database.Queries
+
+	sync.Mutex
+	generationContextCancel map[int]context.CancelFunc
 }
 
 // NewApp creates a new App application struct
 func NewApp(ctx context.Context, queries *database.Queries) *App {
 	return &App{
-		ctx:       ctx,
-		openAICli: openai.NewClient(os.Getenv("OPENAI_API_KEY")),
-		queries:   queries,
+		ctx:                     ctx,
+		openAICli:               openai.NewClient(os.Getenv("OPENAI_API_KEY")),
+		queries:                 queries,
+		generationContextCancel: map[int]context.CancelFunc{},
 	}
 }
 
@@ -63,6 +67,10 @@ func (a *App) Messages(conversationID int) ([]database.Message, error) {
 	return a.queries.ListMessages(a.ctx, conversationID)
 }
 
+func (a *App) GetConversation(conversationID int) (database.Conversation, error) {
+	return a.queries.GetConversation(a.ctx, conversationID)
+}
+
 func (a *App) Conversations() ([]database.Conversation, error) {
 	return a.queries.ListConversations(a.ctx)
 }
@@ -76,9 +84,6 @@ func (a *App) DeleteConversation(conversationID int) error {
 }
 
 func (a *App) SendMessage(conversationID int, content string) (database.Message, error) {
-	// TODO: setConversation callback in both the chat view and the conversations sidebar.
-	//		 In one it will "open" the newly created conversation. In the other it will open the selected conversation.
-	//		 Also, we need to be listening for "conversations-updated".
 	if conversationID == -1 {
 		title := content
 		if len(title) > 20 {
@@ -106,7 +111,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 
 	go func() {
-		if err := a.runChainOfMessages(conversationID); err != nil {
+		if err := a.runChainOfMessages(conversationID); err != nil && !errors.Is(err, context.Canceled) {
 			runtime.EventsEmit(a.ctx, "async-error", err.Error())
 			log.Println("error generating streaming chatgpt response:", err)
 		}
@@ -118,20 +123,33 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 func (a *App) runChainOfMessages(conversationID int) error {
 	// TODO: Add Dalle2
 	// TODO: Add "stop" button that lets you stop the current chain.
-	chainCtx, cancelChain := context.WithCancel(a.ctx)
-	defer cancelChain()
+	genCtx, cancelGeneration := context.WithCancel(a.ctx)
+	defer cancelGeneration()
 
-	a.chainCancellations[conversationID] = cancelChain
+	a.Lock()
+	a.generationContextCancel[conversationID] = cancelGeneration
+	a.Unlock()
+
+	if err := a.queries.MarkGenerationStarted(genCtx, conversationID); err != nil {
+		return err
+	}
+	runtime.EventsEmit(genCtx, fmt.Sprintf("conversation-%d-updated", conversationID))
+
+	defer func() {
+		if err := a.queries.MarkGenerationDone(a.ctx, conversationID); err != nil {
+			runtime.EventsEmit(a.ctx, "async-error", fmt.Errorf("couldn't mark conversation as done generating: %w", err).Error())
+		}
+		runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
+	}()
 
 	stop := []string{"Observation"}
 	retries := 0
 	for {
-		allMessages, err := a.queries.ListMessages(a.ctx, conversationID)
+		allMessages, err := a.queries.ListMessages(genCtx, conversationID)
 		if err != nil {
 			return err
 		}
-		log.Println("allMessages:", allMessages)
-		stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+		stream, err := a.openAICli.CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
 			Model:       openai.GPT3Dot5Turbo,
 			MaxTokens:   500,
 			Temperature: 0.7,
@@ -142,7 +160,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		if err != nil {
 			return fmt.Errorf("couldn't create chat completion stream: %w", err)
 		}
-		gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+		gptMessage, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 			ConversationID: conversationID,
 			Content:        "",
 			Author:         "assistant",
@@ -159,16 +177,16 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			}
 
 			if len(res.Choices) > 0 {
-				if _, err := a.queries.AppendMessage(a.ctx, database.AppendMessageParams{
+				if _, err := a.queries.AppendMessage(genCtx, database.AppendMessageParams{
 					ID:      gptMessage.ID,
 					Content: res.Choices[0].Delta.Content,
 				}); err != nil {
 					return err
 				}
-				runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
+				runtime.EventsEmit(genCtx, fmt.Sprintf("conversation-%d-updated", conversationID))
 			}
 		}
-		gptMessage, err = a.queries.GetMessage(a.ctx, gptMessage.ID)
+		gptMessage, err = a.queries.GetMessage(genCtx, gptMessage.ID)
 		if err != nil {
 			return err
 		}
@@ -211,13 +229,15 @@ func (a *App) runChainOfMessages(conversationID int) error {
 				if !ok {
 					return fmt.Errorf("command is not a string")
 				}
-				cmd := exec.Command("bash", "-c", command)
-				var buf bytes.Buffer
+				cmd := exec.CommandContext(genCtx, "bash", "-c", command)
+				var buf bytes.Buffer // TODO: Stream output to a message.
 				cmd.Stdout = &buf
 				cmd.Stderr = &buf
 				err := cmd.Run()
 				observationString := "Observation: "
-				if err != nil {
+				if err == context.Canceled {
+					return err
+				} else if err != nil {
 					observationString += err.Error()
 				} else {
 					observationString += "successfully executed `" + command + "`"
@@ -225,7 +245,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 				observationString += "\n"
 				observationString += "```\n" + buf.String() + "\n```"
 
-				if _, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+				if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 					ConversationID: conversationID,
 					Content:        observationString,
 					Author:         action.Tool, // TODO: Fixme
@@ -326,4 +346,12 @@ Please respond to the user's messages as best as you can.`
 	return gptMessages
 }
 
-// TODO: Add event "async error" for background processing.
+func (a *App) CancelGeneration(conversationID int) {
+	a.Lock()
+	defer a.Unlock()
+	cancel, ok := a.generationContextCancel[conversationID]
+	if !ok {
+		return
+	}
+	cancel()
+}

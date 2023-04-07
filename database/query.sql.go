@@ -32,7 +32,7 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (M
 }
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time, system_prompt
+INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time, generating, system_prompt
 `
 
 type CreateConversationParams struct {
@@ -47,6 +47,7 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 		&i.ID,
 		&i.Title,
 		&i.LastMessageTime,
+		&i.Generating,
 		&i.SystemPrompt,
 	)
 	return i, err
@@ -83,6 +84,23 @@ func (q *Queries) DeleteConversation(ctx context.Context, id int) error {
 	return err
 }
 
+const getConversation = `-- name: GetConversation :one
+SELECT id, title, last_message_time, generating, system_prompt FROM conversations WHERE id = ?
+`
+
+func (q *Queries) GetConversation(ctx context.Context, id int) (Conversation, error) {
+	row := q.db.QueryRowContext(ctx, getConversation, id)
+	var i Conversation
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.LastMessageTime,
+		&i.Generating,
+		&i.SystemPrompt,
+	)
+	return i, err
+}
+
 const getMessage = `-- name: GetMessage :one
 SELECT id, conversation_id, content, author FROM messages WHERE id = ?
 `
@@ -100,7 +118,7 @@ func (q *Queries) GetMessage(ctx context.Context, id int) (Message, error) {
 }
 
 const listConversations = `-- name: ListConversations :many
-SELECT id, title, last_message_time, system_prompt FROM conversations ORDER BY last_message_time DESC
+SELECT id, title, last_message_time, generating, system_prompt FROM conversations ORDER BY last_message_time DESC
 `
 
 func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error) {
@@ -116,6 +134,7 @@ func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error)
 			&i.ID,
 			&i.Title,
 			&i.LastMessageTime,
+			&i.Generating,
 			&i.SystemPrompt,
 		); err != nil {
 			return nil, err
@@ -161,4 +180,22 @@ func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]Messa
 		return nil, err
 	}
 	return items, nil
+}
+
+const markGenerationDone = `-- name: MarkGenerationDone :exec
+UPDATE conversations SET generating = false WHERE id = ?
+`
+
+func (q *Queries) MarkGenerationDone(ctx context.Context, id int) error {
+	_, err := q.db.ExecContext(ctx, markGenerationDone, id)
+	return err
+}
+
+const markGenerationStarted = `-- name: MarkGenerationStarted :exec
+UPDATE conversations SET generating = true WHERE id = ?
+`
+
+func (q *Queries) MarkGenerationStarted(ctx context.Context, id int) error {
+	_, err := q.db.ExecContext(ctx, markGenerationStarted, id)
+	return err
 }
