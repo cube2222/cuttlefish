@@ -1,11 +1,11 @@
 import {CancelGeneration, GetConversation, Messages, SendMessage} from "../wailsjs/go/main/App";
 import React, {useEffect, useRef, useState} from "react";
 import {database} from "../wailsjs/go/models";
-import Message = database.Message;
 import {EventsOn} from "../wailsjs/runtime";
 import ReactMarkdown from "react-markdown";
 import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
 import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
+import Message = database.Message;
 import Conversation = database.Conversation;
 import {MinusCircle} from "iconoir-react";
 
@@ -143,25 +143,27 @@ const Chat = ({conversationID, setConversationID}: Props) => {
 
     return <div className="w-3/4 bg-gray-800">
         <div className="flex flex-col h-full">
-            <div
-                ref={messagesContainerRef}
-                className="relative flex-1 overflow-y-auto px-4 py-2"
-            >
-                {messages.map((message, index) => (
-                    <div key={index}
-                         className={`flex flex-col ${message.author == 'user' ? "items-end" : "items-start"}`}>
-                        {/*<div className="text-gray-500 mb-1">*/}
-                        {/*    {message.date.toLocaleString()}*/}
-                        {/*</div>*/}
-                        {/*TODO: Display author.*/}
-                        <div
-                            className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
-                            style={{wordWrap: "break-word"}}
-                        >
-                            {renderMarkdown(message)}
+            <div className="relative flex-1 overflow-hidden">
+                <div
+                    ref={messagesContainerRef}
+                    className="flex-1 h-full overflow-y-auto px-4 py-2"
+                >
+                    {messages.map((message, index) => (
+                        <div key={index}
+                             className={`flex flex-col ${message.author == 'user' ? "items-end" : "items-start"}`}>
+                            {/*<div className="text-gray-500 mb-1">*/}
+                            {/*    {message.date.toLocaleString()}*/}
+                            {/*</div>*/}
+                            {/*TODO: Display author.*/}
+                            <div
+                                className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
+                                style={{wordWrap: "break-word"}}
+                            >
+                                {renderMarkdown(message)}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
                 {curConversation?.generating && <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400" onClick={async () => {
                     if (curConversation !== null) {
                         await CancelGeneration(curConversation.id)
