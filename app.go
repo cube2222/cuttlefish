@@ -120,18 +120,28 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 }
 
 func (a *App) runChainOfMessages(conversationID int) error {
+	// TODO: Add Dalle2
+	// TODO: Add "stop" button that lets you stop the current chain.
+	chainCtx, cancelChain := context.WithCancel(a.ctx)
+	defer cancelChain()
+
+	a.chainCancellations[conversationID] = cancelChain
+
+	stop := []string{"Observation"}
+	retries := 0
 	for {
 		allMessages, err := a.queries.ListMessages(a.ctx, conversationID)
 		if err != nil {
 			return err
 		}
+		log.Println("allMessages:", allMessages)
 		stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
 			Model:       openai.GPT3Dot5Turbo,
 			MaxTokens:   500,
 			Temperature: 0.7,
 			TopP:        1,
 			Messages:    MessagesToGPTMessages(allMessages),
-			Stop:        []string{"Observation"},
+			Stop:        stop,
 		})
 		if err != nil {
 			return fmt.Errorf("couldn't create chat completion stream: %w", err)
@@ -166,8 +176,18 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		if err != nil {
 			return err
 		}
-		toolUseEnabled := false
+		if strings.TrimSpace(gptMessage.Content) == "" {
+			stop = []string{}
+			if retries > 2 {
+				return fmt.Errorf("couldn't generate a response after %d retries", retries)
+			}
+			retries++
+			continue
+		}
+		toolUseEnabled := true
 		if toolUseEnabled && (strings.Contains(gptMessage.Content, "```action") || strings.Contains(gptMessage.Content, "Action:")) {
+			// TODO: Make it so that each tool use can be approved by the user.
+
 			// A tool has been called upon!
 			// We match on either, cause ChatGPT doesn't always use the same format.
 			content := gptMessage.Content
@@ -232,6 +252,7 @@ func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionM
 	// TODO: By default, have two modes, "tool use" and "casual".
 	//       In tool use, don't show all of this if no tools are available.
 	// TODO: In the upper right corner you should be able to select the list of tools.
+	// TODO: Make this a Go template.
 	systemMessage := `List of available tools:
 	
 [
@@ -289,13 +310,19 @@ Please respond to the user's messages as best as you can.`
 		Content: systemMessage,
 	})
 	for _, message := range messages {
+		if strings.TrimSpace(message.Content) == "" {
+			continue
+		}
 		gptMessage := openai.ChatCompletionMessage{
 			Content: message.Content,
 		}
 		if message.Author == "assistant" {
 			gptMessage.Role = openai.ChatMessageRoleAssistant
+		} else if message.Author == "user" {
+			gptMessage.Role = openai.ChatMessageRoleUser
 		} else {
 			gptMessage.Role = openai.ChatMessageRoleUser
+			gptMessage.Content += "\nMake sure not to start your next response with `Observation:`"
 		}
 		gptMessages = append(gptMessages, gptMessage)
 	}

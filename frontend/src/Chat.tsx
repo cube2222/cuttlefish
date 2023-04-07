@@ -74,6 +74,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                 children={message.content}
                 components={{
                     code({node, inline, className, children, ...props}) {
+                        // TODO: Render tool use in a special way. I.e. Python should print the python code nicely.
                         const match = /language-(\w+)/.exec(className || "");
                         if (inline) {
                             return (
@@ -143,6 +144,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                         {/*<div className="text-gray-500 mb-1">*/}
                         {/*    {message.date.toLocaleString()}*/}
                         {/*</div>*/}
+                        {/*TODO: Display author.*/}
                         <div
                             className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
                             style={{wordWrap: "break-word"}}
