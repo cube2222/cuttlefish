@@ -67,10 +67,6 @@ func (a *App) Conversations() ([]database.Conversation, error) {
 	return a.queries.ListConversations(a.ctx)
 }
 
-// func (a *App) CreateConversation(params database.CreateConversationParams) (*database.Conversation, error) {
-// 	return a.queries.CreateConversation(a.ctx, params)
-// }
-
 func (a *App) DeleteConversation(conversationID int) error {
 	if err := a.queries.DeleteConversation(a.ctx, conversationID); err != nil {
 		return err
@@ -209,6 +205,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			}
 
 			switch action.Tool {
+			// TODO: Put these into a map. Implementing an interface.
 			case "terminal":
 				command, ok := action.Args["command"].(string)
 				if !ok {
