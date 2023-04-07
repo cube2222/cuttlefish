@@ -166,7 +166,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		if err != nil {
 			return err
 		}
-		toolUseEnabled := true
+		toolUseEnabled := false
 		if toolUseEnabled && (strings.Contains(gptMessage.Content, "```action") || strings.Contains(gptMessage.Content, "Action:")) {
 			// A tool has been called upon!
 			// We match on either, cause ChatGPT doesn't always use the same format.
@@ -185,7 +185,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 
 			var action Action
 			if err := json.Unmarshal([]byte(content), &action); err != nil {
-				return err
+				return err // TODO: respond as observation
 			}
 
 			switch action.Tool {
@@ -215,7 +215,6 @@ func (a *App) runChainOfMessages(conversationID int) error {
 				}); err != nil {
 					return err
 				}
-
 			}
 		} else {
 			break
