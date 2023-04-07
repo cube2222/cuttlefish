@@ -3,7 +3,7 @@ import {database} from "../wailsjs/go/models";
 import SettingsButton from "./SettingsButton";
 import {Conversations, DeleteConversation} from "../wailsjs/go/main/App";
 import {EventsOn} from "../wailsjs/runtime";
-import {Bin} from "iconoir-react";
+import {Bin, EditPencil} from "iconoir-react";
 import Conversation = database.Conversation;
 
 interface Props {
@@ -64,7 +64,8 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
                                 </div>
                                 <p className="text-gray-500">{conversation.title}</p>
                             </div>
-                            <Bin className="absolute scale-75 top-1 right-1 text-gray-500 hover:text-red-300"
+                            <EditPencil className="absolute scale-75 top-1 right-7 text-gray-500 hover:text-gray-400"/>
+                            <Bin className="absolute scale-75 top-1 right-1 text-gray-500 hover:text-red-400"
                                  onClick={async () => onConversationDelete(conversation.id)}/>
                         </div>
                     ))}
