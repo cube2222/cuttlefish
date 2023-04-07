@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -99,7 +102,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	msg, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
 		ConversationID: conversationID,
 		Content:        content,
-		SentBySelf:     true,
+		Author:         "user",
 	})
 	if err != nil {
 		return database.Message{}, err
@@ -107,54 +110,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 
 	go func() {
-		if err := func() error {
-			allMessages, err := a.queries.ListMessages(a.ctx, conversationID)
-			if err != nil {
-				return err
-			}
-			stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
-				Model:       openai.GPT3Dot5Turbo,
-				MaxTokens:   500,
-				Temperature: 0.7,
-				TopP:        1,
-				Messages:    MessagesToGPTMessages(allMessages),
-				Stop:        []string{"Observation"},
-				// TODO: For tools you'll need to pass "Observation" as a stop phrase.
-			})
-			if err != nil {
-				return fmt.Errorf("couldn't create chat completion stream: %w", err)
-			}
-			gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
-				ConversationID: conversationID,
-				Content:        "",
-				SentBySelf:     false,
-			})
-			if err != nil {
-				return err
-			}
-			for {
-				res, err := stream.Recv()
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					return fmt.Errorf("couldn't receive from chat completion stream: %w", err)
-				}
-
-				if len(res.Choices) > 0 {
-					gptMessage.Content += res.Choices[0].Delta.Content
-					if _, err := a.queries.AppendMessage(a.ctx, database.AppendMessageParams{
-						ID:      gptMessage.ID,
-						Content: res.Choices[0].Delta.Content,
-					}); err != nil {
-						return err
-					}
-					runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
-				}
-			}
-			// TODO: If the message contains the string "```action" then we should interpret that and automatically respond with the action's result.
-			//       Then, rinse and repeat.
-			return nil
-		}(); err != nil {
+		if err := a.runChainOfMessages(conversationID); err != nil {
 			runtime.EventsEmit(a.ctx, "async-error", err.Error())
 			log.Println("error generating streaming chatgpt response:", err)
 		}
@@ -163,8 +119,119 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	return msg, nil
 }
 
+func (a *App) runChainOfMessages(conversationID int) error {
+	for {
+		allMessages, err := a.queries.ListMessages(a.ctx, conversationID)
+		if err != nil {
+			return err
+		}
+		stream, err := a.openAICli.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+			Model:       openai.GPT3Dot5Turbo,
+			MaxTokens:   500,
+			Temperature: 0.7,
+			TopP:        1,
+			Messages:    MessagesToGPTMessages(allMessages),
+			Stop:        []string{"Observation"},
+		})
+		if err != nil {
+			return fmt.Errorf("couldn't create chat completion stream: %w", err)
+		}
+		gptMessage, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+			ConversationID: conversationID,
+			Content:        "",
+			Author:         "assistant",
+		})
+		if err != nil {
+			return err
+		}
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return fmt.Errorf("couldn't receive from chat completion stream: %w", err)
+			}
+
+			if len(res.Choices) > 0 {
+				if _, err := a.queries.AppendMessage(a.ctx, database.AppendMessageParams{
+					ID:      gptMessage.ID,
+					Content: res.Choices[0].Delta.Content,
+				}); err != nil {
+					return err
+				}
+				runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
+			}
+		}
+		gptMessage, err = a.queries.GetMessage(a.ctx, gptMessage.ID)
+		if err != nil {
+			return err
+		}
+		toolUseEnabled := true
+		if toolUseEnabled && (strings.Contains(gptMessage.Content, "```action") || strings.Contains(gptMessage.Content, "Action:")) {
+			// A tool has been called upon!
+			// We match on either, cause ChatGPT doesn't always use the same format.
+			content := gptMessage.Content
+			if strings.Contains(gptMessage.Content, "```action") {
+				content = content[strings.Index(content, "```action")+len("```action"):]
+				content = content[:strings.Index(content, "```")]
+				content = strings.TrimSpace(content)
+			} else {
+				content = content[strings.Index(content, "Action:"):]
+				content = content[strings.Index(content, "```"):]
+				content = content[strings.Index(content, "\n"):]
+				content = content[:strings.Index(content, "```")]
+				content = strings.TrimSpace(content)
+			}
+
+			var action Action
+			if err := json.Unmarshal([]byte(content), &action); err != nil {
+				return err
+			}
+
+			switch action.Tool {
+			case "terminal":
+				command, ok := action.Args["command"].(string)
+				if !ok {
+					return fmt.Errorf("command is not a string")
+				}
+				cmd := exec.Command("bash", "-c", command)
+				var buf bytes.Buffer
+				cmd.Stdout = &buf
+				cmd.Stderr = &buf
+				err := cmd.Run()
+				observationString := "Observation: "
+				if err != nil {
+					observationString += err.Error()
+				} else {
+					observationString += "successfully executed `" + command + "`"
+				}
+				observationString += "\n"
+				observationString += "```\n" + buf.String() + "\n```"
+
+				if _, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{
+					ConversationID: conversationID,
+					Content:        observationString,
+					Author:         action.Tool, // TODO: Fixme
+				}); err != nil {
+					return err
+				}
+
+			}
+		} else {
+			break
+		}
+	}
+	return nil
+}
+
+type Action struct {
+	Tool string                 `json:"tool"`
+	Args map[string]interface{} `json:"args"`
+}
+
 func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
 	// TODO: By default, have two modes, "tool use" and "casual".
+	//       In tool use, don't show all of this if no tools are available.
 	// TODO: In the upper right corner you should be able to select the list of tools.
 	systemMessage := `List of available tools:
 	
@@ -226,10 +293,10 @@ Please respond to the user's messages as best as you can.`
 		gptMessage := openai.ChatCompletionMessage{
 			Content: message.Content,
 		}
-		if message.SentBySelf {
-			gptMessage.Role = openai.ChatMessageRoleUser
+		if message.Author == "assistant" {
+			gptMessage.Role = openai.ChatMessageRoleAssistant
 		} else {
-			gptMessage.Role = openai.ChatMessageRoleSystem
+			gptMessage.Role = openai.ChatMessageRoleUser
 		}
 		gptMessages = append(gptMessages, gptMessage)
 	}

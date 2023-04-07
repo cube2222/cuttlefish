@@ -19,5 +19,5 @@ type Message struct {
 	ID             int    `json:"id"`
 	ConversationID int    `json:"conversationID"`
 	Content        string `json:"content"`
-	SentBySelf     bool   `json:"sentBySelf"`
+	Author         string `json:"author"`
 }

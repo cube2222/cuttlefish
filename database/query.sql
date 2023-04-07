@@ -1,8 +1,11 @@
+-- name: GetMessage :one
+SELECT * FROM messages WHERE id = ?;
+
 -- name: ListMessages :many
 SELECT * FROM messages WHERE conversation_id = ? ORDER BY id;
 
 -- name: CreateMessage :one
-INSERT INTO messages (conversation_id, content, sent_by_self) VALUES (?, ?, ?) RETURNING *;
+INSERT INTO messages (conversation_id, content, author) VALUES (?, ?, ?) RETURNING *;
 
 -- name: AppendMessage :one
 UPDATE messages SET content = content || ? WHERE id = ? RETURNING *;

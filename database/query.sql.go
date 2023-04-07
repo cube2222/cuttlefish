@@ -11,7 +11,7 @@ import (
 )
 
 const appendMessage = `-- name: AppendMessage :one
-UPDATE messages SET content = content || ? WHERE id = ? RETURNING id, conversation_id, content, sent_by_self
+UPDATE messages SET content = content || ? WHERE id = ? RETURNING id, conversation_id, content, author
 `
 
 type AppendMessageParams struct {
@@ -26,7 +26,7 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (M
 		&i.ID,
 		&i.ConversationID,
 		&i.Content,
-		&i.SentBySelf,
+		&i.Author,
 	)
 	return i, err
 }
@@ -53,23 +53,23 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 }
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO messages (conversation_id, content, sent_by_self) VALUES (?, ?, ?) RETURNING id, conversation_id, content, sent_by_self
+INSERT INTO messages (conversation_id, content, author) VALUES (?, ?, ?) RETURNING id, conversation_id, content, author
 `
 
 type CreateMessageParams struct {
 	ConversationID int    `json:"conversationID"`
 	Content        string `json:"content"`
-	SentBySelf     bool   `json:"sentBySelf"`
+	Author         string `json:"author"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, createMessage, arg.ConversationID, arg.Content, arg.SentBySelf)
+	row := q.db.QueryRowContext(ctx, createMessage, arg.ConversationID, arg.Content, arg.Author)
 	var i Message
 	err := row.Scan(
 		&i.ID,
 		&i.ConversationID,
 		&i.Content,
-		&i.SentBySelf,
+		&i.Author,
 	)
 	return i, err
 }
@@ -81,6 +81,22 @@ DELETE FROM conversations WHERE id = ?
 func (q *Queries) DeleteConversation(ctx context.Context, id int) error {
 	_, err := q.db.ExecContext(ctx, deleteConversation, id)
 	return err
+}
+
+const getMessage = `-- name: GetMessage :one
+SELECT id, conversation_id, content, author FROM messages WHERE id = ?
+`
+
+func (q *Queries) GetMessage(ctx context.Context, id int) (Message, error) {
+	row := q.db.QueryRowContext(ctx, getMessage, id)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.ConversationID,
+		&i.Content,
+		&i.Author,
+	)
+	return i, err
 }
 
 const listConversations = `-- name: ListConversations :many
@@ -116,7 +132,7 @@ func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error)
 }
 
 const listMessages = `-- name: ListMessages :many
-SELECT id, conversation_id, content, sent_by_self FROM messages WHERE conversation_id = ? ORDER BY id
+SELECT id, conversation_id, content, author FROM messages WHERE conversation_id = ? ORDER BY id
 `
 
 func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]Message, error) {
@@ -132,7 +148,7 @@ func (q *Queries) ListMessages(ctx context.Context, conversationID int) ([]Messa
 			&i.ID,
 			&i.ConversationID,
 			&i.Content,
-			&i.SentBySelf,
+			&i.Author,
 		); err != nil {
 			return nil, err
 		}

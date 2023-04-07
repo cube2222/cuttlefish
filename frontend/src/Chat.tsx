@@ -126,7 +126,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                         );
                     },
                 }}
-                className={`${message.sentBySelf ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.sentBySelf ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
+                className={`${message.author == 'user' ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.author == 'user' ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
             />
         );
     };
@@ -139,7 +139,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
             >
                 {messages.map((message, index) => (
                     <div key={index}
-                         className={`flex flex-col ${message.sentBySelf ? "items-end" : "items-start"}`}>
+                         className={`flex flex-col ${message.author == 'user' ? "items-end" : "items-start"}`}>
                         {/*<div className="text-gray-500 mb-1">*/}
                         {/*    {message.date.toLocaleString()}*/}
                         {/*</div>*/}

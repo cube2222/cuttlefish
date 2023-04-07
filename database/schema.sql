@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS messages (
   id INTEGER PRIMARY KEY,
   conversation_id INTEGER NOT NULL,
   content TEXT NOT NULL,
-  sent_by_self BOOLEAN NOT NULL,
+  author TEXT NOT NULL, -- 'user', 'assistant', or tool name
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
