@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -117,6 +118,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 				Temperature: 0.7,
 				TopP:        1,
 				Messages:    MessagesToGPTMessages(allMessages),
+				Stop:        []string{"Observation"},
 				// TODO: For tools you'll need to pass "Observation" as a stop phrase.
 			})
 			if err != nil {
@@ -149,6 +151,8 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 					runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 				}
 			}
+			// TODO: If the message contains the string "```action" then we should interpret that and automatically respond with the action's result.
+			//       Then, rinse and repeat.
 			return nil
 		}(); err != nil {
 			runtime.EventsEmit(a.ctx, "async-error", err.Error())
@@ -160,10 +164,63 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 }
 
 func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
+	// TODO: By default, have two modes, "tool use" and "casual".
+	// TODO: In the upper right corner you should be able to select the list of tools.
+	systemMessage := `List of available tools:
+	
+[
+  {
+    "tool": "terminal",
+    "args": {
+      "command": "<bash command to run>"
+    }
+  }
+]
+	
+You are a helpful assistant on a MacOS system. You may additionally use tools repeatedly to aid your responses, but should always first describe your thought process, like this:
+Thought: <always write out what you think>
+Action:
+<backticks>action
+{
+  "tool": "<tool name>",
+  "args": {
+	"<arg name>": <arg value>,
+	...
+  }
+}
+<backticks>
+Then you'll receive a response as follows:
+Observation:
+<backticks>
+<The tool's response>
+<backticks>
+
+For example (this tool doesn't necessarily exist):
+Thought: I need to use the add tool to add 5 and 7.
+Action:
+<backticks>action
+{
+  "tool": "add",
+  "args": {
+    "num1": 5,
+    "num2": 7
+  }
+}
+<backticks>
+Observation:
+<backticks>
+12
+<backticks>
+
+You can use tools repeatedly, or provide a final answer to the user.
+Please respond to the user's messages as best as you can.`
+	systemMessage = strings.ReplaceAll(systemMessage, "<backticks>", "```")
+
 	var gptMessages []openai.ChatCompletionMessage
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleSystem,
-		Content: "You are a helpful assistant. Please respond to the user's messages as best as you can.",
+		Role: openai.ChatMessageRoleSystem,
+		// Content: "You are a helpful assistant. Please respond to the user's messages as best as you can.",
+		Content: systemMessage,
 	})
 	for _, message := range messages {
 		gptMessage := openai.ChatCompletionMessage{
