@@ -3,9 +3,10 @@ import React, {Fragment, useState} from "react";
 import {Dialog, Listbox, Switch, Transition} from "@headlessui/react";
 
 interface Props {
+    className?: string;
 }
 
-const SettingsButton = ({}: Props) => {
+const SettingsButton = ({className}: Props) => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [openAIApiKey, setOpenAIApiKey] = useState("");
     const [toggleOption1, setToggleOption1] = useState(false);
@@ -14,8 +15,8 @@ const SettingsButton = ({}: Props) => {
 
     return (
         <>
-            <div onClick={() => setIsSettingsModalOpen(true)} className="absolute bottom-4 left-4 cursor-pointer">
-                <Settings className="text-gray-500"/>
+            <div onClick={() => setIsSettingsModalOpen(true)} className={"cursor-pointer " + className}>
+                <Settings className="text-gray-500 hover:text-gray-400"/>
             </div>
             <Transition show={isSettingsModalOpen} as={Fragment}>
                 <Dialog open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)}>

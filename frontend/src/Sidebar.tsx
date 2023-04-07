@@ -1,14 +1,17 @@
 import React, {useEffect, useState} from "react";
 import {database} from "../wailsjs/go/models";
 import SettingsButton from "./SettingsButton";
-import {Conversations} from "../wailsjs/go/main/App";
+import {Conversations, DeleteConversation} from "../wailsjs/go/main/App";
 import {EventsOn} from "../wailsjs/runtime";
+import {Bin} from "iconoir-react";
 import Conversation = database.Conversation;
 
 interface Props {
+    curConversationID: number | null;
+    setCurConversationID: (conversationID: number | null) => void;
 }
 
-const Sidebar = ({}: Props) => {
+const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
     const [conversations, setConversations] = useState<Array<Conversation>>([]);
 
     useEffect(() => {
@@ -25,27 +28,49 @@ const Sidebar = ({}: Props) => {
         })
     }, []);
 
+    const onConversationDelete = async (id: number) => {
+        await DeleteConversation(id);
+        setCurConversationID(null);
+    }
 
     return (
-        <div className="w-1/4 border-r border-gray-300 border-opacity-50 p-4 bg-gray-900">
-            <h2 className="font-bold text-lg mb-4 text-gray-300">Conversations</h2>
-            <div className="h-5/6 overflow-y-auto">
-                {conversations.map((conversation, index) => (
+        <div className="h-full w-1/4 border-r border-gray-300 border-opacity-50 bg-gray-900 p-2">
+            <div className="flex flex-col h-5/6 w-full border rounded-md border-gray-300 border-opacity-50">
+                <h2 className="font-bold text-lg mb-4 text-gray-300 p-2">Conversations</h2>
+                <div className="overflow-y-auto divide-y divide-gray-700">
                     <div
-                        key={conversation.id}
-                        className="flex items-center mb-4 cursor-pointer border-b border-gray-400 py-2"
+                        className={`flex items-center cursor-pointer py-2 hover:bg-gray-700`}
+                        onClick={() => {
+                            setCurConversationID(null)
+                        }}
                     >
                         {/*<div className="w-10 h-10 rounded-full bg-gray-300 mr-2"></div>*/}
-                        <div className="flex-1 text-gray-500">
-                            <div className="flex justify-between">
-                                <p className="text-sm">Today</p>
-                            </div>
-                            <p className="text-gray-500">{conversation.title}</p>
+                        <div className="flex-1 text-gray-500 px-2">
+                            <p className="text-gray-500">Create new conversation...</p>
                         </div>
                     </div>
-                ))}
+                    {conversations.map((conversation, index) => (
+                        <div
+                            key={conversation.id}
+                            className={`relative flex items-center cursor-pointer py-2 ${curConversationID == conversation.id ? "bg-gray-800" : ""} hover:bg-gray-700`}
+                            onClick={() => {
+                                setCurConversationID(conversation.id)
+                            }}
+                        >
+                            {/*<div className="w-10 h-10 rounded-full bg-gray-300 mr-2"></div>*/}
+                            <div className="flex-1 text-gray-500 px-2">
+                                <div className="flex justify-between">
+                                    <p className="text-sm">Today</p>
+                                </div>
+                                <p className="text-gray-500">{conversation.title}</p>
+                            </div>
+                            <Bin className="absolute scale-75 top-1 right-1 text-gray-500 hover:text-red-300"
+                                 onClick={async () => onConversationDelete(conversation.id)}/>
+                        </div>
+                    ))}
+                </div>
             </div>
-            <SettingsButton/>
+            <SettingsButton className="absolute bottom-4 left-4"/>
         </div>
     )
 }

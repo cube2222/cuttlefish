@@ -29,7 +29,7 @@ const App = () => {
 
     return (
         <div className="flex h-screen overflow-hidden">
-            <Sidebar/>
+            <Sidebar curConversationID={curConversationID} setCurConversationID={setCurConversationID}/>
             <Chat conversationID={curConversationID} setConversationID={setCurConversationID}/>
             <Transition
                 show={errorMessage != ""}

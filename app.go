@@ -67,11 +67,11 @@ func (a *App) Conversations() ([]database.Conversation, error) {
 // 	return a.queries.CreateConversation(a.ctx, params)
 // }
 
-func (a *App) ResetConversation(conversationID int) error {
-	if err := a.queries.DeleteMessages(a.ctx); err != nil {
+func (a *App) DeleteConversation(conversationID int) error {
+	if err := a.queries.DeleteConversation(a.ctx, conversationID); err != nil {
 		return err
 	}
-	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
+	runtime.EventsEmit(a.ctx, "conversations-updated")
 	return nil
 }
 
@@ -92,6 +92,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 			return database.Message{}, err
 		}
 		conversationID = conversation.ID
+		runtime.EventsEmit(a.ctx, "conversations-updated")
 	}
 
 	msg, err := a.queries.CreateMessage(a.ctx, database.CreateMessageParams{

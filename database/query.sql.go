@@ -74,12 +74,12 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (M
 	return i, err
 }
 
-const deleteMessages = `-- name: DeleteMessages :exec
-DELETE FROM messages
+const deleteConversation = `-- name: DeleteConversation :exec
+DELETE FROM conversations WHERE id = ?
 `
 
-func (q *Queries) DeleteMessages(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteMessages)
+func (q *Queries) DeleteConversation(ctx context.Context, id int) error {
+	_, err := q.db.ExecContext(ctx, deleteConversation, id)
 	return err
 }
 

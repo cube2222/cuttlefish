@@ -1,4 +1,4 @@
-import {Messages, ResetConversation, SendMessage} from "../wailsjs/go/main/App";
+import {Messages, SendMessage} from "../wailsjs/go/main/App";
 import React, {useEffect, useRef, useState} from "react";
 import {database} from "../wailsjs/go/models";
 import Message = database.Message;
@@ -22,6 +22,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
 
     useEffect(() => {
         if (conversationID === null) {
+            setMessages([]);
             return;
         }
         Messages(conversationID).then((messages) => {
@@ -31,6 +32,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
 
     useEffect(() => {
         if (conversationID === null) {
+            setMessages([]);
             return;
         }
         return EventsOn(`conversation-${conversationID}-updated`, (data: any) => {
@@ -160,27 +162,13 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                             onKeyDown={handleKeyDown}
                             className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
                         />
-                <div className="flex justify-between">
+                <div className="flex justify-end">
                     <button
                         type="button"
                         onClick={() => handleSubmit(false)}
                         className="bg-blue-500 text-white p-2 rounded-md mt-2"
                     >
                         Send
-                    </button>
-                    {conversationID !== null && <button
-                        type="button"
-                        onClick={() => ResetConversation(conversationID)}
-                        className="bg-red-500 text-white p-2 rounded-md mt-2"
-                    >
-                        Reset
-                    </button>}
-                    <button
-                        type="button"
-                        onClick={() => handleSubmit(true)}
-                        className="bg-orange-500 text-white p-2 rounded-md mt-2"
-                    >
-                        Send (Other, Debug)
                     </button>
                 </div>
             </form>

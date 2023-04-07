@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS messages (
   conversation_id INTEGER NOT NULL,
   content TEXT NOT NULL,
   sent_by_self BOOLEAN NOT NULL,
-  FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
