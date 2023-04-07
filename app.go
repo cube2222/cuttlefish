@@ -89,9 +89,17 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		if len(title) > 20 {
 			title = title[:13] + "..."
 		}
+		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
+			SystemPromptTemplate: "You are a helpful assistant. Respond to the queries as best as you can.",
+			ToolsEnabled:         []string{},
+		})
+		if err != nil {
+			return database.Message{}, err
+		}
 		conversation, err := a.queries.CreateConversation(a.ctx, database.CreateConversationParams{
-			Title:           title,
-			LastMessageTime: time.Now(),
+			ConversationSettingsID: settings.ID,
+			Title:                  title,
+			LastMessageTime:        time.Now(),
 		})
 		if err != nil {
 			return database.Message{}, err
@@ -122,7 +130,6 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 
 func (a *App) runChainOfMessages(conversationID int) error {
 	// TODO: Add Dalle2
-	// TODO: Add "stop" button that lets you stop the current chain.
 	genCtx, cancelGeneration := context.WithCancel(a.ctx)
 	defer cancelGeneration()
 
@@ -354,4 +361,51 @@ func (a *App) CancelGeneration(conversationID int) {
 		return
 	}
 	cancel()
+}
+
+func (a *App) GetConversationSettings(conversationSettingsID int) (database.ConversationSetting, error) {
+	return a.queries.GetConversationSettings(a.ctx, conversationSettingsID)
+}
+
+func (a *App) UpdateConversationSettings(params database.UpdateConversationSettingsParams) error {
+	return a.queries.UpdateConversationSettings(a.ctx, params)
+}
+
+type Settings struct {
+	OpenAIAPIKey string `json:"openAiApiKey"`
+	Model        string `json:"model"`
+	// Add nested struct per configurable plugin below.
+}
+
+func (a *App) GetSettings() (Settings, error) {
+	keyValue, err := a.queries.GetKeyValue(a.ctx, "settings")
+	if err != nil {
+		return Settings{}, err
+	}
+	var settings Settings
+	if err := json.Unmarshal([]byte(keyValue.Value), &settings); err != nil {
+		return Settings{}, err
+	}
+	settings.OpenAIAPIKey = "*****"
+	return settings, nil
+}
+
+func (a *App) SaveSettings(settings Settings) error {
+	oldSettings, err := a.GetSettings()
+	if err != nil {
+		// TODO: Handle not found.
+		return err
+	}
+	if settings.OpenAIAPIKey == "*****" {
+		settings.OpenAIAPIKey = oldSettings.OpenAIAPIKey
+	}
+
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	return a.queries.SetKeyValue(a.ctx, database.SetKeyValueParams{
+		Key:   "settings",
+		Value: string(settingsJSON),
+	})
 }

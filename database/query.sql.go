@@ -32,24 +32,41 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (M
 }
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (title, last_message_time) VALUES (?, ?) RETURNING id, title, last_message_time, generating, system_prompt
+INSERT INTO conversations (conversation_settings_id, title, last_message_time) VALUES (?, ?, ?) RETURNING id, conversation_settings_id, title, last_message_time, generating
 `
 
 type CreateConversationParams struct {
-	Title           string    `json:"title"`
-	LastMessageTime time.Time `json:"lastMessageTime"`
+	ConversationSettingsID int       `json:"conversationSettingsID"`
+	Title                  string    `json:"title"`
+	LastMessageTime        time.Time `json:"lastMessageTime"`
 }
 
 func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error) {
-	row := q.db.QueryRowContext(ctx, createConversation, arg.Title, arg.LastMessageTime)
+	row := q.db.QueryRowContext(ctx, createConversation, arg.ConversationSettingsID, arg.Title, arg.LastMessageTime)
 	var i Conversation
 	err := row.Scan(
 		&i.ID,
+		&i.ConversationSettingsID,
 		&i.Title,
 		&i.LastMessageTime,
 		&i.Generating,
-		&i.SystemPrompt,
 	)
+	return i, err
+}
+
+const createConversationSettings = `-- name: CreateConversationSettings :one
+INSERT INTO conversation_settings (system_prompt_template, tools_enabled) VALUES (?, ?) RETURNING id, system_prompt_template, tools_enabled
+`
+
+type CreateConversationSettingsParams struct {
+	SystemPromptTemplate string      `json:"systemPromptTemplate"`
+	ToolsEnabled         StringArray `json:"toolsEnabled"`
+}
+
+func (q *Queries) CreateConversationSettings(ctx context.Context, arg CreateConversationSettingsParams) (ConversationSetting, error) {
+	row := q.db.QueryRowContext(ctx, createConversationSettings, arg.SystemPromptTemplate, arg.ToolsEnabled)
+	var i ConversationSetting
+	err := row.Scan(&i.ID, &i.SystemPromptTemplate, &i.ToolsEnabled)
 	return i, err
 }
 
@@ -85,7 +102,7 @@ func (q *Queries) DeleteConversation(ctx context.Context, id int) error {
 }
 
 const getConversation = `-- name: GetConversation :one
-SELECT id, title, last_message_time, generating, system_prompt FROM conversations WHERE id = ?
+SELECT id, conversation_settings_id, title, last_message_time, generating FROM conversations WHERE id = ?
 `
 
 func (q *Queries) GetConversation(ctx context.Context, id int) (Conversation, error) {
@@ -93,11 +110,33 @@ func (q *Queries) GetConversation(ctx context.Context, id int) (Conversation, er
 	var i Conversation
 	err := row.Scan(
 		&i.ID,
+		&i.ConversationSettingsID,
 		&i.Title,
 		&i.LastMessageTime,
 		&i.Generating,
-		&i.SystemPrompt,
 	)
+	return i, err
+}
+
+const getConversationSettings = `-- name: GetConversationSettings :one
+SELECT id, system_prompt_template, tools_enabled FROM conversation_settings WHERE id = ?
+`
+
+func (q *Queries) GetConversationSettings(ctx context.Context, id int) (ConversationSetting, error) {
+	row := q.db.QueryRowContext(ctx, getConversationSettings, id)
+	var i ConversationSetting
+	err := row.Scan(&i.ID, &i.SystemPromptTemplate, &i.ToolsEnabled)
+	return i, err
+}
+
+const getKeyValue = `-- name: GetKeyValue :one
+SELECT "key", value FROM key_values WHERE key = ?
+`
+
+func (q *Queries) GetKeyValue(ctx context.Context, key string) (KeyValue, error) {
+	row := q.db.QueryRowContext(ctx, getKeyValue, key)
+	var i KeyValue
+	err := row.Scan(&i.Key, &i.Value)
 	return i, err
 }
 
@@ -118,7 +157,7 @@ func (q *Queries) GetMessage(ctx context.Context, id int) (Message, error) {
 }
 
 const listConversations = `-- name: ListConversations :many
-SELECT id, title, last_message_time, generating, system_prompt FROM conversations ORDER BY last_message_time DESC
+SELECT id, conversation_settings_id, title, last_message_time, generating FROM conversations ORDER BY last_message_time DESC
 `
 
 func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error) {
@@ -132,10 +171,10 @@ func (q *Queries) ListConversations(ctx context.Context) ([]Conversation, error)
 		var i Conversation
 		if err := rows.Scan(
 			&i.ID,
+			&i.ConversationSettingsID,
 			&i.Title,
 			&i.LastMessageTime,
 			&i.Generating,
-			&i.SystemPrompt,
 		); err != nil {
 			return nil, err
 		}
@@ -197,5 +236,34 @@ UPDATE conversations SET generating = true WHERE id = ?
 
 func (q *Queries) MarkGenerationStarted(ctx context.Context, id int) error {
 	_, err := q.db.ExecContext(ctx, markGenerationStarted, id)
+	return err
+}
+
+const setKeyValue = `-- name: SetKeyValue :exec
+INSERT INTO key_values (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = ?
+`
+
+type SetKeyValueParams struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (q *Queries) SetKeyValue(ctx context.Context, arg SetKeyValueParams) error {
+	_, err := q.db.ExecContext(ctx, setKeyValue, arg.Key, arg.Value)
+	return err
+}
+
+const updateConversationSettings = `-- name: UpdateConversationSettings :exec
+UPDATE conversation_settings SET system_prompt_template = ?, tools_enabled = ? WHERE id = ?
+`
+
+type UpdateConversationSettingsParams struct {
+	SystemPromptTemplate string      `json:"systemPromptTemplate"`
+	ToolsEnabled         StringArray `json:"toolsEnabled"`
+	ID                   int         `json:"id"`
+}
+
+func (q *Queries) UpdateConversationSettings(ctx context.Context, arg UpdateConversationSettingsParams) error {
+	_, err := q.db.ExecContext(ctx, updateConversationSettings, arg.SystemPromptTemplate, arg.ToolsEnabled, arg.ID)
 	return err
 }

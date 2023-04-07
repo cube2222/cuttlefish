@@ -9,11 +9,22 @@ import (
 )
 
 type Conversation struct {
-	ID              int       `json:"id"`
-	Title           string    `json:"title"`
-	LastMessageTime time.Time `json:"lastMessageTime"`
-	Generating      bool      `json:"generating"`
-	SystemPrompt    string    `json:"systemPrompt"`
+	ID                     int       `json:"id"`
+	ConversationSettingsID int       `json:"conversationSettingsID"`
+	Title                  string    `json:"title"`
+	LastMessageTime        time.Time `json:"lastMessageTime"`
+	Generating             bool      `json:"generating"`
+}
+
+type ConversationSetting struct {
+	ID                   int         `json:"id"`
+	SystemPromptTemplate string      `json:"systemPromptTemplate"`
+	ToolsEnabled         StringArray `json:"toolsEnabled"`
+}
+
+type KeyValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Message struct {

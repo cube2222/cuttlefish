@@ -8,8 +8,20 @@ CREATE TABLE IF NOT EXISTS messages (
 
 CREATE TABLE IF NOT EXISTS conversations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_settings_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   last_message_time DATETIME NOT NULL,
   generating BOOLEAN NOT NULL DEFAULT 0,
-  system_prompt TEXT NOT NULL DEFAULT 'You are a helpful assistant. Respond to the queries as best as you can.'
+  FOREIGN KEY (conversation_settings_id) REFERENCES conversation_settings(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS conversation_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  system_prompt_template TEXT NOT NULL DEFAULT 'You are a helpful assistant. Respond to the queries as best as you can.',
+  tools_enabled TEXT_ARRAY NOT NULL DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS key_values (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
