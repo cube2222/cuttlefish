@@ -7,11 +7,16 @@ import (
 
 	"github.com/Andrew-peng/go-dalle2/dalle2"
 
+	"gptui/database"
 	"gptui/tools"
 )
 
 type Tool struct {
 	OpenAIToken string
+}
+
+func (t *Tool) Description() string {
+	return "generate images using dalle2"
 }
 
 func (t *Tool) ArgumentDescriptions() map[string]string {
@@ -20,13 +25,22 @@ func (t *Tool) ArgumentDescriptions() map[string]string {
 	}
 }
 
-func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (*tools.RunResult, error) {
-	cli, err := dalle2.MakeNewClientV1(t.OpenAIToken)
+func (t *Tool) Instantiate(ctx context.Context, settings database.Settings) (tools.ToolInstance, error) {
+	dalleCli, err := dalle2.MakeNewClientV1(settings.OpenAIAPIKey)
 	if err != nil {
-		return nil, fmt.Errorf("error creating dalle2 client: %s", err)
+		return nil, fmt.Errorf("couldn't create dalle2 client: %w", err)
 	}
+	return &ToolInstance{
+		dalleCli: dalleCli,
+	}, nil
+}
 
-	res, err := cli.Create(
+type ToolInstance struct {
+	dalleCli dalle2.Client
+}
+
+func (t *ToolInstance) Run(ctx context.Context, args map[string]interface{}) (*tools.RunResult, error) {
+	res, err := t.dalleCli.Create(
 		ctx,
 		args["prompt"].(string),
 		dalle2.WithFormat(dalle2.URL),
@@ -47,4 +61,8 @@ func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (*tools.Run
 		Result: "successfully generated image",
 		Output: string(data),
 	}, nil
+}
+
+func (t *ToolInstance) Shutdown() error {
+	return nil
 }

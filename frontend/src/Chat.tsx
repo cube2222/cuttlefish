@@ -8,6 +8,7 @@ import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
 import {MinusCircle} from "iconoir-react";
 import Message = database.Message;
 import Conversation = database.Conversation;
+import {capitalizeFirstLetter} from "./helpers";
 
 interface Props {
     conversationID: number | null;
@@ -160,7 +161,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                                 style={{wordWrap: "break-word"}}
                             >
                                 <div className={`${message.author == 'user' ? "text-end" : "text-start"} text-gray-500 p-1 px-2`}>
-                                    {message.author}
+                                    {capitalizeFirstLetter(message.author == 'user' ? "you" : message.author)}
                                 </div>
                                 {renderMarkdown(message)}
                             </div>

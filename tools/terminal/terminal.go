@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"os/exec"
 
+	"gptui/database"
 	"gptui/tools"
 )
 
 type Tool struct {
+}
+
+func (t *Tool) Description() string {
+	return "run commands in a bash shell"
 }
 
 func (t *Tool) ArgumentDescriptions() map[string]string {
@@ -18,7 +23,14 @@ func (t *Tool) ArgumentDescriptions() map[string]string {
 	}
 }
 
-func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (*tools.RunResult, error) {
+func (t *Tool) Instantiate(ctx context.Context, settings database.Settings) (tools.ToolInstance, error) {
+	return &ToolInstance{}, nil
+}
+
+type ToolInstance struct {
+}
+
+func (t *ToolInstance) Run(ctx context.Context, args map[string]interface{}) (*tools.RunResult, error) {
 	command, ok := args["command"].(string)
 	if !ok {
 		return nil, fmt.Errorf("command is not a string")
@@ -40,4 +52,8 @@ func (t *Tool) Run(ctx context.Context, args map[string]interface{}) (*tools.Run
 		Result: result,
 		Output: buf.String() + "\n",
 	}, nil
+}
+
+func (t *ToolInstance) Shutdown() error {
+	return nil
 }

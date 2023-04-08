@@ -155,7 +155,16 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 	}()
 
-	stop := []string{"Observation"}
+	cachedToolInstances := map[string]tools.ToolInstance{}
+	defer func() {
+		for name, instance := range cachedToolInstances {
+			if err := instance.Shutdown(); err != nil {
+				runtime.EventsEmit(a.ctx, "async-error", fmt.Errorf("couldn't shut down tool `%s`: %w", name, err).Error())
+			}
+		}
+	}()
+
+	stop := []string{"Observation", "Response"}
 	retries := 0
 	for {
 		allMessages, err := a.queries.ListMessages(genCtx, conversationID)
@@ -236,12 +245,21 @@ func (a *App) runChainOfMessages(conversationID int) error {
 				return fmt.Errorf("couldn't decode action: %w", err)
 			}
 
-			tool, ok := a.tools[action.Tool]
+			toolInstance, ok := cachedToolInstances[action.Tool]
 			if !ok {
-				// TODO: respond as observation
-				return fmt.Errorf("tool `%s` not found", action.Tool)
+				tool, ok := a.tools[action.Tool]
+				if !ok {
+					// TODO: respond as observation
+					return fmt.Errorf("tool `%s` not found", action.Tool)
+				}
+				toolInstance, err = tool.Instantiate(genCtx, a.settings)
+				if err != nil {
+					// TODO: respond as observation
+					return fmt.Errorf("couldn't instantiate tool `%s`: %w", action.Tool, err)
+				}
 			}
-			result, err := tool.Run(genCtx, action.Args)
+
+			result, err := toolInstance.Run(genCtx, action.Args)
 			if err != nil {
 				// TODO: respond as observation
 				return fmt.Errorf("couldn't run tool `%s`: %w", action.Tool, err)
@@ -313,16 +331,18 @@ func (a *App) generateSystemPrompt() (string, error) {
 	}
 
 	type toolDescription struct {
-		Tool string            `json:"tool"`
-		Args map[string]string `json:"args"`
+		Tool        string            `json:"tool"`
+		Description string            `json:"description"`
+		Args        map[string]string `json:"args"`
 	}
 
 	var toolsDescription []toolDescription
 	// TODO: Should be based on the enabled tools.
 	for toolName, tool := range a.tools {
 		toolsDescription = append(toolsDescription, toolDescription{
-			Tool: toolName,
-			Args: tool.ArgumentDescriptions(),
+			Tool:        toolName,
+			Description: tool.Description(),
+			Args:        tool.ArgumentDescriptions(),
 		})
 	}
 	data, err := json.MarshalIndent(toolsDescription, "", "  ")

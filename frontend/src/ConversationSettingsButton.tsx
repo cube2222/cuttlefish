@@ -3,6 +3,7 @@ import React, {Fragment, useEffect, useState} from "react";
 import {Dialog, Switch, Transition} from "@headlessui/react";
 import {GetConversationSettings, UpdateConversationSettings} from "../wailsjs/go/main/App";
 import {database} from "../wailsjs/go/models";
+import {capitalizeFirstLetter} from "./helpers";
 
 interface Props {
     className?: string;
@@ -136,10 +137,6 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
             </Transition>
         </>
     )
-}
-
-function capitalizeFirstLetter(str: string) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export default ConversationSettingsButton;
