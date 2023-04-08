@@ -44,7 +44,6 @@ SELECT * FROM key_values WHERE key = ?;
 
 -- name: SetKeyValue :exec
 INSERT INTO key_values (key, value) VALUES (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value;
--- TODO: Not sure if this will actually work.
 
 -- name: CloneConversationSettings :one
 INSERT INTO conversation_settings(system_prompt_template, tools_enabled) SELECT system_prompt_template, tools_enabled FROM conversation_settings WHERE conversation_settings.id = ? RETURNING *;

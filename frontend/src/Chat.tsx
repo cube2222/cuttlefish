@@ -15,9 +15,6 @@ interface Props {
 }
 
 const Chat = ({conversationID, setConversationID}: Props) => {
-    // TODO: ConversationID null if this is a new chat. Then a message should create the conversation.
-    //       Remember you'll want stuff like conversation templates passed too.
-
     const [messages, setMessages] = useState<Array<Message>>([]);
     const [curConversation, setCurConversation] = useState<database.Conversation | null>(null);
     const [inputText, setInputText] = useState("");
@@ -136,6 +133,9 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                             </div>
                         );
                     },
+                    img({...props}) {
+                        return <img {...props} className="rounded-md w-60 my-2" />
+                    }
                 }}
                 className={`${message.author == 'user' ? "bg-gray-600" : "bg-gray-700"} py-2 px-4 rounded-md ${message.author == 'user' ? "text-gray-200" : "text-gray-300"} inline-block max-w-full`}
             />
