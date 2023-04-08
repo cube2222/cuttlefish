@@ -64,7 +64,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
         }
     };
 
-    const handleSubmit = async (debugMode: boolean = false) => {
+    const handleSubmit = async () => {
         if (inputText.trim() !== "") {
             let message = await SendMessage(conversationID !== null ? conversationID : -1, inputText);
             setInputText("");
@@ -185,7 +185,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        onClick={() => handleSubmit(false)}
+                        onClick={handleSubmit}
                         className="bg-blue-500 text-white p-2 rounded-md mt-2"
                     >
                         Send

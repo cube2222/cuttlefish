@@ -16,6 +16,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"gptui/database"
+	"gptui/tools"
+	"gptui/tools/dalle2"
+	"gptui/tools/terminal"
 )
 
 // App struct
@@ -23,7 +26,7 @@ type App struct {
 	ctx       context.Context
 	openAICli *openai.Client
 	queries   *database.Queries
-	tools     map[string]Tool
+	tools     map[string]tools.Tool
 
 	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
@@ -35,8 +38,11 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 		ctx:       ctx,
 		openAICli: openai.NewClient(os.Getenv("OPENAI_API_KEY")),
 		queries:   queries,
-		tools: map[string]Tool{
-			"terminal": &Terminal{},
+		tools: map[string]tools.Tool{
+			"terminal": &terminal.Tool{},
+			"generate_image": &dalle2.Tool{
+				OpenAIToken: os.Getenv("OPENAI_API_KEY"),
+			},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
@@ -244,7 +250,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			observationString := "Observation: "
 			observationString += result.Result
 			observationString += "\n"
-			observationString += "```\n" + result.Output + "```"
+			observationString += "```\n" + result.Output + "\n```"
 
 			if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 				ConversationID: conversationID,
@@ -278,7 +284,13 @@ func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionM
     "args": {
       "command": "<bash command to run>"
     }
-  }
+  },
+  {
+    "tool": "generate_image",
+    "args": {
+      "prompt": "<prompt to use to generate the image; the prompt should be detailed, and include keywords regarding styling; it shouldn't be a proper sentence, rather, a bag of keywords>"
+    }
+  },
 ]
 	
 You are a helpful assistant on a MacOS system. You may additionally use tools repeatedly to aid your responses, but should always first describe your thought process, like this:
