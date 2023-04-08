@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -121,7 +120,6 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	go func() {
 		if err := a.runChainOfMessages(conversationID); err != nil && !errors.Is(err, context.Canceled) {
 			runtime.EventsEmit(a.ctx, "async-error", err.Error())
-			log.Println("error generating streaming chatgpt response:", err)
 		}
 	}()
 
