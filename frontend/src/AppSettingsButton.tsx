@@ -1,8 +1,8 @@
 import {Settings} from "iconoir-react";
 import React, {Fragment, useEffect, useState} from "react";
-import {Dialog, Listbox, Switch, Transition} from "@headlessui/react";
+import {Dialog, Listbox, Transition} from "@headlessui/react";
 import {GetSettings, SaveSettings} from "../wailsjs/go/main/App";
-import {main} from "../wailsjs/go/models";
+import {database} from "../wailsjs/go/models";
 
 interface Props {
     className?: string;
@@ -10,10 +10,8 @@ interface Props {
 
 const AppSettingsButton = ({className}: Props) => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [settings, setSettings] = useState<main.Settings>();
+    const [settings, setSettings] = useState<database.Settings>();
     const [openAiApiKey, setOpenAiApiKey] = useState("");
-    const [toggleOption1, setToggleOption1] = useState(false);
-    const [textInputOption1, setTextInputOption1] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
     const [changed, setChanged] = useState(false);
 
@@ -73,7 +71,8 @@ const AppSettingsButton = ({className}: Props) => {
                         leaveFrom="opacity-100 scale-100"
                         leaveTo="opacity-0 scale-95"
                     >
-                        <Dialog.Panel className="flex flex-col fixed inset-40 z-40 bg-gray-900 rounded-md p-4 overflow-hidden">
+                        <Dialog.Panel
+                            className="flex flex-col fixed inset-40 z-40 bg-gray-900 rounded-md p-4 overflow-hidden">
                             <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">Settings</Dialog.Title>
                             <div className="divide-y divide-gray-700 h-full overflow-y-auto">
                                 <div className="flex items-center justify-between p-2">

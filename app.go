@@ -30,7 +30,7 @@ type App struct {
 	ctx      context.Context
 	queries  *database.Queries
 	tools    map[string]tools.Tool
-	settings Settings
+	settings database.Settings
 
 	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
@@ -362,24 +362,18 @@ func (a *App) UpdateConversationSettings(params database.UpdateConversationSetti
 	return a.queries.UpdateConversationSettings(a.ctx, params)
 }
 
-type Settings struct {
-	OpenAIAPIKey string `json:"openAiApiKey"`
-	Model        string `json:"model"`
-	// Add nested struct per configurable plugin below.
-}
-
-func (a *App) getSettingsRaw() (Settings, error) {
+func (a *App) getSettingsRaw() (database.Settings, error) {
 	keyValue, err := a.queries.GetKeyValue(a.ctx, "settings")
 	if errors.Is(err, sql.ErrNoRows) {
-		return Settings{
+		return database.Settings{
 			Model: "gpt-3.5-turbo",
 		}, nil
 	} else if err != nil {
-		return Settings{}, err
+		return database.Settings{}, err
 	}
-	var settings Settings
+	var settings database.Settings
 	if err := json.Unmarshal([]byte(keyValue.Value), &settings); err != nil {
-		return Settings{}, err
+		return database.Settings{}, err
 	}
 	a.m.Lock()
 	defer a.m.Unlock()
@@ -388,10 +382,10 @@ func (a *App) getSettingsRaw() (Settings, error) {
 	return settings, nil
 }
 
-func (a *App) GetSettings() (Settings, error) {
+func (a *App) GetSettings() (database.Settings, error) {
 	settings, err := a.getSettingsRaw()
 	if err != nil {
-		return Settings{}, err
+		return database.Settings{}, err
 	}
 	if settings.OpenAIAPIKey != "" {
 		settings.OpenAIAPIKey = "*****"
@@ -399,7 +393,7 @@ func (a *App) GetSettings() (Settings, error) {
 	return settings, nil
 }
 
-func (a *App) SaveSettings(settings Settings) error {
+func (a *App) SaveSettings(settings database.Settings) error {
 	oldSettings, err := a.getSettingsRaw()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
