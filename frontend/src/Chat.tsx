@@ -24,6 +24,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
     useEffect(() => {
         if (conversationID === null) {
             setMessages([]);
+            setCurConversation(null);
             return;
         }
         Messages(conversationID).then((messages) => {
@@ -37,6 +38,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
     useEffect(() => {
         if (conversationID === null) {
             setMessages([]);
+            setCurConversation(null);
             return;
         }
         return EventsOn(`conversation-${conversationID}-updated`, (data: any) => {
