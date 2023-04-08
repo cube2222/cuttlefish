@@ -77,7 +77,7 @@ func (a *App) Conversations() ([]database.Conversation, error) {
 
 func (a *App) DeleteConversation(conversationID int) error {
 	if err := a.queries.DeleteConversation(a.ctx, conversationID); err != nil {
-		return err
+		return fmt.Errorf("coudn't delete conversation: %w", err)
 	}
 	runtime.EventsEmit(a.ctx, "conversations-updated")
 	return nil
@@ -94,7 +94,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 			ToolsEnabled:         []string{},
 		})
 		if err != nil {
-			return database.Message{}, err
+			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)
 		}
 		conversation, err := a.queries.CreateConversation(a.ctx, database.CreateConversationParams{
 			ConversationSettingsID: settings.ID,
@@ -102,7 +102,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 			LastMessageTime:        time.Now(),
 		})
 		if err != nil {
-			return database.Message{}, err
+			return database.Message{}, fmt.Errorf("couldn't create conversation: %w", err)
 		}
 		conversationID = conversation.ID
 		runtime.EventsEmit(a.ctx, "conversations-updated")
@@ -114,7 +114,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		Author:         "user",
 	})
 	if err != nil {
-		return database.Message{}, err
+		return database.Message{}, fmt.Errorf("couldn't create message: %w", err)
 	}
 	runtime.EventsEmit(a.ctx, fmt.Sprintf("conversation-%d-updated", conversationID))
 
@@ -153,7 +153,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 	for {
 		allMessages, err := a.queries.ListMessages(genCtx, conversationID)
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't list conversation messages: %w", err)
 		}
 		stream, err := a.openAICli.CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
 			Model:       openai.GPT3Dot5Turbo,
@@ -172,7 +172,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			Author:         "assistant",
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't create response message: %w", err)
 		}
 		for {
 			res, err := stream.Recv()
@@ -187,14 +187,14 @@ func (a *App) runChainOfMessages(conversationID int) error {
 					ID:      gptMessage.ID,
 					Content: res.Choices[0].Delta.Content,
 				}); err != nil {
-					return err
+					return fmt.Errorf("couldn't append to message: %w", err)
 				}
 				runtime.EventsEmit(genCtx, fmt.Sprintf("conversation-%d-updated", conversationID))
 			}
 		}
 		gptMessage, err = a.queries.GetMessage(genCtx, gptMessage.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't get response message: %w", err)
 		}
 		if strings.TrimSpace(gptMessage.Content) == "" {
 			stop = []string{}
@@ -225,7 +225,8 @@ func (a *App) runChainOfMessages(conversationID int) error {
 
 			var action Action
 			if err := json.Unmarshal([]byte(content), &action); err != nil {
-				return err // TODO: respond as observation
+				// TODO: respond as observation
+				return fmt.Errorf("couldn't decode action: %w", err)
 			}
 
 			switch action.Tool {
@@ -256,7 +257,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 					Content:        observationString,
 					Author:         action.Tool, // TODO: Fixme
 				}); err != nil {
-					return err
+					return fmt.Errorf("couldn't create observation message: %w", err)
 				}
 			}
 		} else {

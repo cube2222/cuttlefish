@@ -5,6 +5,7 @@ import {Conversations, DeleteConversation} from "../wailsjs/go/main/App";
 import {EventsOn} from "../wailsjs/runtime";
 import {Bin, EditPencil} from "iconoir-react";
 import Conversation = database.Conversation;
+import ConversationSettingsButton from "./ConversationSettingsButton";
 
 interface Props {
     curConversationID: number | null;
@@ -64,7 +65,7 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
                                 </div>
                                 <p className="text-gray-500">{conversation.title}</p>
                             </div>
-                            <EditPencil className="absolute scale-75 top-1 right-7 text-gray-500 hover:text-gray-400"/>
+                            <ConversationSettingsButton className="absolute scale-75 top-1 right-7 text-gray-500 hover:text-gray-400" conversationSettingsID={conversation.conversationSettingsID}/>
                             <Bin className="absolute scale-75 top-1 right-1 text-gray-500 hover:text-red-400"
                                  onClick={async () => onConversationDelete(conversation.id)}/>
                         </div>

@@ -27,13 +27,14 @@ func main() {
 	ctx := context.Background()
 
 	// db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
-	db, err := sql.Open("sqlite3", "file:gptui.db?cache=shared&mode=rwc&_foreign_keys=1&_journal_mode=WAL&_busy_timeout=5000&_loc=auto")
+	// db, err := sql.Open("sqlite3", "file:gptui.db?cache=shared&mode=rwc&_foreign_keys=1&_journal_mode=WAL&_busy_timeout=5000&_loc=auto")
+	db, err := sql.Open("sqlite3", "file:gptui.db?mode=rwc&_foreign_keys=1&_busy_timeout=5000&_loc=auto")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// create tables
+	// TODO: Add proper migrations
 	if _, err := db.ExecContext(ctx, ddl); err != nil {
 		log.Fatal(err)
 	}
