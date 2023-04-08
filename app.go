@@ -18,6 +18,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/exp/slices"
 
 	"gptui/database"
 	"gptui/tools"
@@ -98,7 +99,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 			title = title[:13] + "..."
 		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
-			SystemPromptTemplate: "You are a helpful assistant. Respond to the queries as best as you can.",
+			SystemPromptTemplate: defaultSystemPromptTemplate,
 			ToolsEnabled:         []string{},
 		})
 		if err != nil {
@@ -148,6 +149,15 @@ func (a *App) runChainOfMessages(conversationID int) error {
 	}
 	runtime.EventsEmit(genCtx, fmt.Sprintf("conversation-%d-updated", conversationID))
 
+	curConversation, err := a.queries.GetConversation(genCtx, conversationID)
+	if err != nil {
+		return fmt.Errorf("couldn't get conversation: %w", err)
+	}
+	curConversationSettings, err := a.queries.GetConversationSettings(genCtx, curConversation.ConversationSettingsID)
+	if err != nil {
+		return fmt.Errorf("couldn't get conversation settings: %w", err)
+	}
+
 	defer func() {
 		if err := a.queries.MarkGenerationDone(a.ctx, conversationID); err != nil {
 			runtime.EventsEmit(a.ctx, "async-error", fmt.Errorf("couldn't mark conversation as done generating: %w", err).Error())
@@ -171,12 +181,16 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		if err != nil {
 			return fmt.Errorf("couldn't list conversation messages: %w", err)
 		}
+		gptMessages, err := a.messagesToGPTMessages(curConversationSettings, allMessages)
+		if err != nil {
+			return fmt.Errorf("couldn't convert messages to GPT messages: %w", err)
+		}
 		stream, err := a.openAICli().CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
 			Model:       openai.GPT3Dot5Turbo,
 			MaxTokens:   500,
 			Temperature: 0.7,
 			TopP:        1,
-			Messages:    a.messagesToGPTMessages(allMessages),
+			Messages:    gptMessages,
 			Stop:        stop,
 		})
 		if err != nil {
@@ -288,12 +302,11 @@ type Action struct {
 	Args map[string]interface{} `json:"args"`
 }
 
-func (a *App) messagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
-	generatedSystemPrompt, err := a.generateSystemPrompt()
+func (a *App) messagesToGPTMessages(conversationSettings database.ConversationSetting, messages []database.Message) ([]openai.ChatCompletionMessage, error) {
+	generatedSystemPrompt, err := a.generateSystemPrompt(conversationSettings)
 	if err != nil {
-		log.Println("couldn't generate system prompt: ", err)
+		return nil, fmt.Errorf("couldn't generate system prompt: %w", err)
 	}
-	log.Println("generated system prompt: ", generatedSystemPrompt)
 
 	var gptMessages []openai.ChatCompletionMessage
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
@@ -318,13 +331,13 @@ func (a *App) messagesToGPTMessages(messages []database.Message) []openai.ChatCo
 		}
 		gptMessages = append(gptMessages, gptMessage)
 	}
-	return gptMessages
+	return gptMessages, nil
 }
 
 //go:embed default_system_prompt.gotmpl
-var defaultSystemPrompt string
+var defaultSystemPromptTemplate string
 
-func (a *App) generateSystemPrompt() (string, error) {
+func (a *App) generateSystemPrompt(conversationSettings database.ConversationSetting) (string, error) {
 	var params struct {
 		ToolsDescription string
 		AnyToolsEnabled  bool
@@ -336,9 +349,11 @@ func (a *App) generateSystemPrompt() (string, error) {
 		Args        map[string]string `json:"args"`
 	}
 
-	var toolsDescription []toolDescription
-	// TODO: Should be based on the enabled tools.
+	toolsDescription := []toolDescription{}
 	for toolName, tool := range a.tools {
+		if !slices.Contains(conversationSettings.ToolsEnabled, toolName) {
+			continue
+		}
 		toolsDescription = append(toolsDescription, toolDescription{
 			Tool:        toolName,
 			Description: tool.Description(),
@@ -350,10 +365,11 @@ func (a *App) generateSystemPrompt() (string, error) {
 		return "", fmt.Errorf("couldn't encode tools description: %w", err)
 	}
 	params.ToolsDescription = string(data)
-	params.AnyToolsEnabled = true
+	params.AnyToolsEnabled = len(toolsDescription) > 0
 
 	var buf bytes.Buffer
-	tmpl, err := template.New("system_prompt").Parse(defaultSystemPrompt)
+	// TODO: Use custom template.
+	tmpl, err := template.New("system_prompt").Parse(conversationSettings.SystemPromptTemplate)
 	if err != nil {
 		return "", fmt.Errorf("couldn't parse system prompt template: %w", err)
 	}
