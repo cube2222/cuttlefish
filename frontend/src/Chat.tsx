@@ -62,6 +62,9 @@ const Chat = ({conversationID, setConversationID}: Props) => {
     };
 
     const handleSubmit = async () => {
+        if (curConversation?.generating) {
+            return;
+        }
         if (inputText.trim() !== "") {
             let message = await SendMessage(conversationID !== null ? conversationID : -1, inputText);
             setInputText("");
@@ -152,7 +155,6 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                     {messages.map((message, index) => (
                         <div key={index}
                              className={`flex flex-col ${message.author == 'user' ? "items-end" : "items-start"}`}>
-                            {/*TODO: Display author.*/}
                             <div
                                 className={`flex flex-col max-w-5/6 w-5/6 ${message.author == 'user' ? "items-end" : "items-start"} py-1 px-4 rounded-md text-white inline-block relative`}
                                 style={{wordWrap: "break-word"}}
@@ -176,17 +178,17 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                 onSubmit={(e) => e.preventDefault()}
                 className="flex flex-col h-48 px-4 py-2"
             >
-                        <textarea
-                            value={inputText}
-                            onChange={(event) => setInputText(event.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
-                        />
+                <textarea
+                    value={inputText}
+                    onChange={(event) => setInputText(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
+                />
                 <div className="flex justify-end">
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        className="bg-blue-500 text-white p-2 rounded-md mt-2"
+                        className={`${curConversation?.generating ? "bg-gray-500" : "bg-blue-500"} text-white p-2 rounded-md mt-2`}
                     >
                         Send
                     </button>
