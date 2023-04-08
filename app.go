@@ -136,7 +136,6 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 }
 
 func (a *App) runChainOfMessages(conversationID int) error {
-	// TODO: Add Dalle2
 	genCtx, cancelGeneration := context.WithCancel(a.ctx)
 	defer cancelGeneration()
 
@@ -255,7 +254,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 				ConversationID: conversationID,
 				Content:        observationString,
-				Author:         action.Tool, // TODO: Fixme
+				Author:         action.Tool,
 			}); err != nil {
 				return fmt.Errorf("couldn't create observation message: %w", err)
 			}
@@ -274,7 +273,6 @@ type Action struct {
 func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
 	// TODO: By default, have two modes, "tool use" and "casual".
 	//       In tool use, don't show all of this if no tools are available.
-	// TODO: In the upper right corner you should be able to select the list of tools.
 	// TODO: Make this a Go template.
 	systemMessage := `List of available tools:
 	
