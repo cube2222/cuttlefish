@@ -22,6 +22,12 @@ type ConversationSetting struct {
 	ToolsEnabled         StringArray `json:"toolsEnabled"`
 }
 
+type ConversationTemplate struct {
+	ID                     int    `json:"id"`
+	Name                   string `json:"name"`
+	ConversationSettingsID int    `json:"conversationSettingsID"`
+}
+
 type KeyValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`

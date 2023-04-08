@@ -25,3 +25,10 @@ CREATE TABLE IF NOT EXISTS key_values (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS conversation_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    conversation_settings_id INTEGER NOT NULL,
+    FOREIGN KEY (conversation_settings_id) REFERENCES conversation_settings(id) ON DELETE CASCADE ON UPDATE CASCADE
+);

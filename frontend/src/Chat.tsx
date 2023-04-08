@@ -152,14 +152,14 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                     {messages.map((message, index) => (
                         <div key={index}
                              className={`flex flex-col ${message.author == 'user' ? "items-end" : "items-start"}`}>
-                            {/*<div className="text-gray-500 mb-1">*/}
-                            {/*    {message.date.toLocaleString()}*/}
-                            {/*</div>*/}
                             {/*TODO: Display author.*/}
                             <div
-                                className={`py-2 px-4 rounded-md text-white inline-block relative max-w-full`}
+                                className={`flex flex-col max-w-5/6 w-5/6 ${message.author == 'user' ? "items-end" : "items-start"} py-1 px-4 rounded-md text-white inline-block relative`}
                                 style={{wordWrap: "break-word"}}
                             >
+                                <div className={`${message.author == 'user' ? "text-end" : "text-start"} text-gray-500 p-1 px-2`}>
+                                    {message.author}
+                                </div>
                                 {renderMarkdown(message)}
                             </div>
                         </div>

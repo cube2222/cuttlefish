@@ -31,6 +31,19 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (M
 	return i, err
 }
 
+const cloneConversationSettings = `-- name: CloneConversationSettings :one
+
+INSERT INTO conversation_settings(system_prompt_template, tools_enabled) SELECT system_prompt_template, tools_enabled FROM conversation_settings WHERE conversation_settings.id = ? RETURNING id, system_prompt_template, tools_enabled
+`
+
+// TODO: Not sure if this will actually work.
+func (q *Queries) CloneConversationSettings(ctx context.Context, id int) (ConversationSetting, error) {
+	row := q.db.QueryRowContext(ctx, cloneConversationSettings, id)
+	var i ConversationSetting
+	err := row.Scan(&i.ID, &i.SystemPromptTemplate, &i.ToolsEnabled)
+	return i, err
+}
+
 const createConversation = `-- name: CreateConversation :one
 INSERT INTO conversations (conversation_settings_id, title, last_message_time) VALUES (?, ?, ?) RETURNING id, conversation_settings_id, title, last_message_time, generating
 `
@@ -67,6 +80,22 @@ func (q *Queries) CreateConversationSettings(ctx context.Context, arg CreateConv
 	row := q.db.QueryRowContext(ctx, createConversationSettings, arg.SystemPromptTemplate, arg.ToolsEnabled)
 	var i ConversationSetting
 	err := row.Scan(&i.ID, &i.SystemPromptTemplate, &i.ToolsEnabled)
+	return i, err
+}
+
+const createConversationTemplate = `-- name: CreateConversationTemplate :one
+INSERT INTO conversation_templates(name, conversation_settings_id) VALUES (?, ?) RETURNING id, name, conversation_settings_id
+`
+
+type CreateConversationTemplateParams struct {
+	Name                   string `json:"name"`
+	ConversationSettingsID int    `json:"conversationSettingsID"`
+}
+
+func (q *Queries) CreateConversationTemplate(ctx context.Context, arg CreateConversationTemplateParams) (ConversationTemplate, error) {
+	row := q.db.QueryRowContext(ctx, createConversationTemplate, arg.Name, arg.ConversationSettingsID)
+	var i ConversationTemplate
+	err := row.Scan(&i.ID, &i.Name, &i.ConversationSettingsID)
 	return i, err
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -9,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +23,7 @@ type App struct {
 	ctx       context.Context
 	openAICli *openai.Client
 	queries   *database.Queries
+	tools     map[string]Tool
 
 	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
@@ -33,9 +32,12 @@ type App struct {
 // NewApp creates a new App application struct
 func NewApp(ctx context.Context, queries *database.Queries) *App {
 	return &App{
-		ctx:                     ctx,
-		openAICli:               openai.NewClient(os.Getenv("OPENAI_API_KEY")),
-		queries:                 queries,
+		ctx:       ctx,
+		openAICli: openai.NewClient(os.Getenv("OPENAI_API_KEY")),
+		queries:   queries,
+		tools: map[string]Tool{
+			"terminal": &Terminal{},
+		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
 }
@@ -229,36 +231,27 @@ func (a *App) runChainOfMessages(conversationID int) error {
 				return fmt.Errorf("couldn't decode action: %w", err)
 			}
 
-			switch action.Tool {
-			// TODO: Put these into a map. Implementing an interface.
-			case "terminal":
-				command, ok := action.Args["command"].(string)
-				if !ok {
-					return fmt.Errorf("command is not a string")
-				}
-				cmd := exec.CommandContext(genCtx, "bash", "-c", command)
-				var buf bytes.Buffer // TODO: Stream output to a message.
-				cmd.Stdout = &buf
-				cmd.Stderr = &buf
-				err := cmd.Run()
-				observationString := "Observation: "
-				if err == context.Canceled {
-					return err
-				} else if err != nil {
-					observationString += err.Error()
-				} else {
-					observationString += "successfully executed `" + command + "`"
-				}
-				observationString += "\n"
-				observationString += "```\n" + buf.String() + "\n```"
+			tool, ok := a.tools[action.Tool]
+			if !ok {
+				// TODO: respond as observation
+				return fmt.Errorf("tool `%s` not found", action.Tool)
+			}
+			result, err := tool.Run(genCtx, action.Args)
+			if err != nil {
+				// TODO: respond as observation
+				return fmt.Errorf("couldn't run tool `%s`: %w", action.Tool, err)
+			}
+			observationString := "Observation: "
+			observationString += result.Result
+			observationString += "\n"
+			observationString += "```\n" + result.Output + "```"
 
-				if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
-					ConversationID: conversationID,
-					Content:        observationString,
-					Author:         action.Tool, // TODO: Fixme
-				}); err != nil {
-					return fmt.Errorf("couldn't create observation message: %w", err)
-				}
+			if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
+				ConversationID: conversationID,
+				Content:        observationString,
+				Author:         action.Tool, // TODO: Fixme
+			}); err != nil {
+				return fmt.Errorf("couldn't create observation message: %w", err)
 			}
 		} else {
 			break
@@ -347,7 +340,8 @@ Please respond to the user's messages as best as you can.`
 			gptMessage.Role = openai.ChatMessageRoleUser
 		} else {
 			gptMessage.Role = openai.ChatMessageRoleUser
-			gptMessage.Content += "\nMake sure not to start your next response with `Observation:`"
+			gptMessage.Content = fmt.Sprintf("`%s` response:", message.Author) + gptMessage.Content
+			// gptMessage.Content += "\nMake sure not to start your next response with `Observation:`, nor by thanking for this reminder."
 		}
 		gptMessages = append(gptMessages, gptMessage)
 	}
