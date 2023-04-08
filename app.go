@@ -324,6 +324,7 @@ Observation:
 <backticks>
 
 You can use tools repeatedly, or provide a final answer to the user.
+Format your responses as markdown. I.e. you can embed images using ![](<image url>).
 Please respond to the user's messages as best as you can.`
 	systemMessage = strings.ReplaceAll(systemMessage, "<backticks>", "```")
 

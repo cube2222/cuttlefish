@@ -82,6 +82,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
             <ReactMarkdown
                 children={message.content}
                 components={{
+                    // TODO add custom rendering for images that rounds out corners and adds some padding
                     code({node, inline, className, children, ...props}) {
                         // TODO: Render tool use in a special way. I.e. Python should print the python code nicely.
                         const match = /language-(\w+)/.exec(className || "");

@@ -6,9 +6,9 @@ import (
 	"embed"
 	"log"
 
-	_ "github.com/glebarez/go-sqlite"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
+	_ "modernc.org/sqlite"
 
 	"gptui/database"
 )
@@ -25,7 +25,7 @@ var ddl string
 func main() {
 	ctx := context.Background()
 
-	db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc")
+	db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		log.Fatal(err)
 	}
