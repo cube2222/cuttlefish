@@ -14,7 +14,7 @@ type Tool struct {
 
 func (t *Tool) ArgumentDescriptions() map[string]string {
 	return map[string]string{
-		"command": "<bash command to run>",
+		"command": "bash command to run",
 	}
 }
 

@@ -1,15 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/sashabaranov/go-openai"
@@ -23,10 +27,10 @@ import (
 
 // App struct
 type App struct {
-	ctx       context.Context
-	openAICli *openai.Client
-	queries   *database.Queries
-	tools     map[string]tools.Tool
+	ctx      context.Context
+	queries  *database.Queries
+	tools    map[string]tools.Tool
+	settings Settings
 
 	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
@@ -34,10 +38,9 @@ type App struct {
 
 // NewApp creates a new App application struct
 func NewApp(ctx context.Context, queries *database.Queries) *App {
-	return &App{
-		ctx:       ctx,
-		openAICli: openai.NewClient(os.Getenv("OPENAI_API_KEY")),
-		queries:   queries,
+	out := &App{
+		ctx:     ctx,
+		queries: queries,
 		tools: map[string]tools.Tool{
 			"terminal": &terminal.Tool{},
 			"generate_image": &dalle2.Tool{
@@ -46,6 +49,14 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
+
+	settings, err := out.getSettingsRaw()
+	if err != nil {
+		log.Printf("couldn't load settings: %w", err)
+	}
+	out.settings = settings
+
+	return out
 }
 
 // startup is called at application startup
@@ -54,21 +65,10 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// domReady is called after front-end resources have been loaded
-func (a *App) domReady(ctx context.Context) {
-	// Add your action here
-}
-
-// beforeClose is called when the application is about to quit,
-// either by clicking the window close button or calling runtime.Quit.
-// Returning true will cause the application to continue, false will continue shutdown as normal.
-func (a *App) beforeClose(ctx context.Context) (prevent bool) {
-	return false
-}
-
-// shutdown is called at application termination
-func (a *App) shutdown(ctx context.Context) {
-	// Perform your teardown here
+func (a *App) openAICli() *openai.Client {
+	a.m.Lock()
+	defer a.m.Unlock()
+	return openai.NewClient(a.settings.OpenAIAPIKey)
 }
 
 func (a *App) Messages(conversationID int) ([]database.Message, error) {
@@ -162,12 +162,12 @@ func (a *App) runChainOfMessages(conversationID int) error {
 		if err != nil {
 			return fmt.Errorf("couldn't list conversation messages: %w", err)
 		}
-		stream, err := a.openAICli.CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
+		stream, err := a.openAICli().CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
 			Model:       openai.GPT3Dot5Turbo,
 			MaxTokens:   500,
 			Temperature: 0.7,
 			TopP:        1,
-			Messages:    MessagesToGPTMessages(allMessages),
+			Messages:    a.messagesToGPTMessages(allMessages),
 			Stop:        stop,
 		})
 		if err != nil {
@@ -270,72 +270,17 @@ type Action struct {
 	Args map[string]interface{} `json:"args"`
 }
 
-func MessagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
-	// TODO: By default, have two modes, "tool use" and "casual".
-	//       In tool use, don't show all of this if no tools are available.
-	// TODO: Make this a Go template.
-	systemMessage := `List of available tools:
-	
-[
-  {
-    "tool": "terminal",
-    "args": {
-      "command": "<bash command to run>"
-    }
-  },
-  {
-    "tool": "generate_image",
-    "args": {
-      "prompt": "<prompt to use to generate the image; the prompt should be detailed, and include keywords regarding styling; it shouldn't be a proper sentence, rather, a bag of keywords>"
-    }
-  },
-]
-	
-You are a helpful assistant on a MacOS system. You may additionally use tools repeatedly to aid your responses, but should always first describe your thought process, like this:
-Thought: <always write out what you think>
-Action:
-<backticks>action
-{
-  "tool": "<tool name>",
-  "args": {
-	"<arg name>": <arg value>,
-	...
-  }
-}
-<backticks>
-Then you'll receive a response as follows:
-Observation:
-<backticks>
-<The tool's response>
-<backticks>
-
-For example (this tool doesn't necessarily exist):
-Thought: I need to use the add tool to add 5 and 7.
-Action:
-<backticks>action
-{
-  "tool": "add",
-  "args": {
-    "num1": 5,
-    "num2": 7
-  }
-}
-<backticks>
-Observation:
-<backticks>
-12
-<backticks>
-
-You can use tools repeatedly, or provide a final answer to the user.
-Format your responses as markdown. I.e. you can embed images using ![](<image url>).
-Please respond to the user's messages as best as you can.`
-	systemMessage = strings.ReplaceAll(systemMessage, "<backticks>", "```")
+func (a *App) messagesToGPTMessages(messages []database.Message) []openai.ChatCompletionMessage {
+	generatedSystemPrompt, err := a.generateSystemPrompt()
+	if err != nil {
+		log.Println("couldn't generate system prompt: ", err)
+	}
+	log.Println("generated system prompt: ", generatedSystemPrompt)
 
 	var gptMessages []openai.ChatCompletionMessage
 	gptMessages = append(gptMessages, openai.ChatCompletionMessage{
-		Role: openai.ChatMessageRoleSystem,
-		// Content: "You are a helpful assistant. Please respond to the user's messages as best as you can.",
-		Content: systemMessage,
+		Role:    openai.ChatMessageRoleSystem,
+		Content: generatedSystemPrompt,
 	})
 	for _, message := range messages {
 		if strings.TrimSpace(message.Content) == "" {
@@ -356,6 +301,47 @@ Please respond to the user's messages as best as you can.`
 		gptMessages = append(gptMessages, gptMessage)
 	}
 	return gptMessages
+}
+
+//go:embed default_system_prompt.gotmpl
+var defaultSystemPrompt string
+
+func (a *App) generateSystemPrompt() (string, error) {
+	var params struct {
+		ToolsDescription string
+		AnyToolsEnabled  bool
+	}
+
+	type toolDescription struct {
+		Tool string            `json:"tool"`
+		Args map[string]string `json:"args"`
+	}
+
+	var toolsDescription []toolDescription
+	// TODO: Should be based on the enabled tools.
+	for toolName, tool := range a.tools {
+		toolsDescription = append(toolsDescription, toolDescription{
+			Tool: toolName,
+			Args: tool.ArgumentDescriptions(),
+		})
+	}
+	data, err := json.MarshalIndent(toolsDescription, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("couldn't encode tools description: %w", err)
+	}
+	params.ToolsDescription = string(data)
+	params.AnyToolsEnabled = true
+
+	var buf bytes.Buffer
+	tmpl, err := template.New("system_prompt").Parse(defaultSystemPrompt)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse system prompt template: %w", err)
+	}
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return "", fmt.Errorf("couldn't execute system prompt template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 func (a *App) CancelGeneration(conversationID int) {
@@ -384,13 +370,21 @@ type Settings struct {
 
 func (a *App) getSettingsRaw() (Settings, error) {
 	keyValue, err := a.queries.GetKeyValue(a.ctx, "settings")
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		return Settings{
+			Model: "gpt-3.5-turbo",
+		}, nil
+	} else if err != nil {
 		return Settings{}, err
 	}
 	var settings Settings
 	if err := json.Unmarshal([]byte(keyValue.Value), &settings); err != nil {
 		return Settings{}, err
 	}
+	a.m.Lock()
+	defer a.m.Unlock()
+	a.settings = settings // Just to be safe.
+
 	return settings, nil
 }
 
@@ -418,8 +412,16 @@ func (a *App) SaveSettings(settings Settings) error {
 	if err != nil {
 		return err
 	}
-	return a.queries.SetKeyValue(a.ctx, database.SetKeyValueParams{
+	if err := a.queries.SetKeyValue(a.ctx, database.SetKeyValueParams{
 		Key:   "settings",
 		Value: string(settingsJSON),
-	})
+	}); err != nil {
+		return fmt.Errorf("couldn't save settings: %w", err)
+	}
+
+	a.m.Lock()
+	defer a.m.Unlock()
+	a.settings = settings
+
+	return nil
 }

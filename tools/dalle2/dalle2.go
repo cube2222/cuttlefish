@@ -16,7 +16,7 @@ type Tool struct {
 
 func (t *Tool) ArgumentDescriptions() map[string]string {
 	return map[string]string{
-		"prompt": "<prompt to use to generate the image; the prompt should be detailed, and include keywords regarding styling; it shouldn't be a proper sentence, rather, a bag of keywords>",
+		"prompt": "prompt to use to generate the image; the prompt should be detailed, and include keywords regarding styling; it shouldn't be a proper sentence, rather, a bag of keywords",
 	}
 }
 
