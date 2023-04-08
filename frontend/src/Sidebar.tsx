@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {database} from "../wailsjs/go/models";
-import SettingsButton from "./SettingsButton";
+import AppSettingsButton from "./AppSettingsButton";
 import {Conversations, DeleteConversation} from "../wailsjs/go/main/App";
 import {EventsOn} from "../wailsjs/runtime";
 import {Bin, EditPencil} from "iconoir-react";
@@ -72,7 +72,7 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
                 </div>
             </div>
             <div className="h-12"></div>
-            <SettingsButton className="absolute bottom-4 left-4"/>
+            <AppSettingsButton className="absolute bottom-4 left-4"/>
         </div>
     )
 }

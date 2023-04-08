@@ -1,17 +1,47 @@
 import {Settings} from "iconoir-react";
-import React, {Fragment, useState} from "react";
+import React, {Fragment, useEffect, useState} from "react";
 import {Dialog, Listbox, Switch, Transition} from "@headlessui/react";
+import {GetSettings, SaveSettings} from "../wailsjs/go/main/App";
+import {main} from "../wailsjs/go/models";
 
 interface Props {
     className?: string;
 }
 
-const SettingsButton = ({className}: Props) => {
+const AppSettingsButton = ({className}: Props) => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [openAIApiKey, setOpenAIApiKey] = useState("");
+    const [settings, setSettings] = useState<main.Settings>();
+    const [openAiApiKey, setOpenAiApiKey] = useState("");
     const [toggleOption1, setToggleOption1] = useState(false);
     const [textInputOption1, setTextInputOption1] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
+    const [changed, setChanged] = useState(false);
+
+    useEffect(() => {
+        GetSettings().then((curSettings) => {
+            setSettings(curSettings);
+            setOpenAiApiKey(curSettings.openAiApiKey);
+            setModel(curSettings.model);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!settings) {
+            return;
+        }
+        setChanged(
+            openAiApiKey !== settings.openAiApiKey
+            || model !== settings.model
+        );
+    }, [openAiApiKey, model])
+
+    const saveSettings = async () => {
+        await SaveSettings({
+            openAiApiKey: openAiApiKey,
+            model: model,
+        });
+        setChanged(false);
+    }
 
     return (
         <>
@@ -49,6 +79,8 @@ const SettingsButton = ({className}: Props) => {
                                 <div className="flex items-center justify-between p-2">
                                     <p className="text-gray-400">OpenAI API Key</p>
                                     <input type="password"
+                                           value={openAiApiKey}
+                                           onChange={(event) => setOpenAiApiKey(event.target.value)}
                                            className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
                                 </div>
                                 <div className="flex items-center justify-between p-2">
@@ -103,7 +135,15 @@ const SettingsButton = ({className}: Props) => {
                                         className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-700 text-gray-300 resize-none rounded-md"
                                     />
                                 </div>
-
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={async () => await saveSettings()}
+                                    className={`${changed ? "bg-blue-500" : "bg-gray-500"} text-white p-2 rounded-md mt-2`}
+                                >
+                                    Save
+                                </button>
                             </div>
                         </Dialog.Panel>
                     </Transition.Child>
@@ -113,4 +153,4 @@ const SettingsButton = ({className}: Props) => {
     )
 }
 
-export default SettingsButton;
+export default AppSettingsButton;

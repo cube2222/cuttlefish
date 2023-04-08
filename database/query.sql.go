@@ -240,7 +240,7 @@ func (q *Queries) MarkGenerationStarted(ctx context.Context, id int) error {
 }
 
 const setKeyValue = `-- name: SetKeyValue :exec
-INSERT INTO key_values (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = ?
+INSERT INTO key_values (key, value) VALUES (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value
 `
 
 type SetKeyValueParams struct {

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -376,7 +377,7 @@ type Settings struct {
 	// Add nested struct per configurable plugin below.
 }
 
-func (a *App) GetSettings() (Settings, error) {
+func (a *App) getSettingsRaw() (Settings, error) {
 	keyValue, err := a.queries.GetKeyValue(a.ctx, "settings")
 	if err != nil {
 		return Settings{}, err
@@ -385,14 +386,23 @@ func (a *App) GetSettings() (Settings, error) {
 	if err := json.Unmarshal([]byte(keyValue.Value), &settings); err != nil {
 		return Settings{}, err
 	}
-	settings.OpenAIAPIKey = "*****"
+	return settings, nil
+}
+
+func (a *App) GetSettings() (Settings, error) {
+	settings, err := a.getSettingsRaw()
+	if err != nil {
+		return Settings{}, err
+	}
+	if settings.OpenAIAPIKey != "" {
+		settings.OpenAIAPIKey = "*****"
+	}
 	return settings, nil
 }
 
 func (a *App) SaveSettings(settings Settings) error {
-	oldSettings, err := a.GetSettings()
-	if err != nil {
-		// TODO: Handle not found.
+	oldSettings, err := a.getSettingsRaw()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 	if settings.OpenAIAPIKey == "*****" {
