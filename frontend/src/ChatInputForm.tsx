@@ -6,7 +6,7 @@ import {database} from "../wailsjs/go/models";
 
 interface Props {
     disabled: boolean;
-    conversationID: number;
+    conversationID: number | null;
     setConversationID: (conversationID: number) => void;
 }
 
