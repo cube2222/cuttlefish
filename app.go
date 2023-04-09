@@ -22,6 +22,7 @@ import (
 	"gptui/database"
 	"gptui/tools"
 	"gptui/tools/dalle2"
+	"gptui/tools/geturl"
 	"gptui/tools/search"
 	"gptui/tools/terminal"
 )
@@ -46,6 +47,7 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"terminal":       &terminal.Tool{},
 			"generate_image": &dalle2.Tool{},
 			"search":         &search.Tool{},
+			"get_url":        &geturl.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
@@ -99,7 +101,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"search"},
+			ToolsEnabled:         []string{"search", "get_url"},
 		})
 		if err != nil {
 			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)

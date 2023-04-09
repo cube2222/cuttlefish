@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/Andrew-peng/go-dalle2 v0.1.0
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/davecgh/go-spew v1.1.1
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/sashabaranov/go-openai v1.5.8
+	github.com/trietmn/go-wiki v1.0.0
 	github.com/wailsapp/wails/v2 v2.4.1
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
 	google.golang.org/api v0.116.0
@@ -16,6 +16,7 @@ require (
 require (
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	github.com/anaskhan96/soup v1.2.5 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
