@@ -101,7 +101,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"search", "get_url"},
+			ToolsEnabled:         []string{"search", "get_url", "terminal"},
 		})
 		if err != nil {
 			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)

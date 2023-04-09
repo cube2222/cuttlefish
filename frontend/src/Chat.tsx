@@ -9,6 +9,7 @@ import {MinusCircle} from "iconoir-react";
 import Message = database.Message;
 import Conversation = database.Conversation;
 import {capitalizeFirstLetter, isJSONString} from "./helpers";
+import ChatInputForm from "./ChatInputForm";
 
 interface Props {
     conversationID: number | null;
@@ -183,26 +184,7 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                       }
                   }}/>}
             </div>
-            <form
-                onSubmit={(e) => e.preventDefault()}
-                className="flex flex-col h-48 px-4 py-2"
-            >
-                <textarea
-                    value={inputText}
-                    onChange={(event) => setInputText(event.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="border border-gray-300 border-opacity-50 p-2 w-full h-32 bg-gray-900 text-white resize-none rounded-md"
-                />
-                <div className="flex justify-end">
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        className={`${curConversation?.generating ? "bg-gray-500" : "bg-blue-500"} text-white p-2 rounded-md mt-2`}
-                    >
-                        Send
-                    </button>
-                </div>
-            </form>
+            <ChatInputForm disabled={curConversation?.generating || false} conversationID={conversationID} setConversationID={setConversationID}/>
         </div>
     </div>
 }
