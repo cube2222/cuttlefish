@@ -18,7 +18,7 @@ type Tool struct {
 }
 
 func (t *Tool) Description() string {
-	return "fetch the contents of a url"
+	return "fetch the contents of a url; useful for getting details about a search result"
 }
 
 func (t *Tool) ArgumentDescriptions() map[string]string {

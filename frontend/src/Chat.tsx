@@ -3,12 +3,12 @@ import React, {useEffect, useRef, useState} from "react";
 import {database} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime";
 import ReactMarkdown from "react-markdown";
-import {Light as SyntaxHighlighter} from "react-syntax-highlighter";
-import {dracula} from "react-syntax-highlighter/dist/esm/styles/hljs";
+import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
+import {dracula} from "react-syntax-highlighter/dist/esm/styles/prism";
 import {MinusCircle} from "iconoir-react";
 import Message = database.Message;
 import Conversation = database.Conversation;
-import {capitalizeFirstLetter} from "./helpers";
+import {capitalizeFirstLetter, isJSONString} from "./helpers";
 
 interface Props {
     conversationID: number | null;
@@ -88,6 +88,13 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                     code({node, inline, className, children, ...props}) {
                         // TODO: Render tool use in a special way. I.e. Python should print the python code nicely.
                         const match = /language-(\w+)/.exec(className || "");
+                        let language = match ? match[1] : null;
+                        if (!language && isJSONString(String(children))) {
+                            language = "json";
+                        }
+                        if (language == "action") {
+                            language = "json";
+                        }
                         if (inline) {
                             return (
                                 <code className={className} {...props}>
@@ -117,12 +124,12 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                                 >
                                     Copy
                                 </button>
-                                {match ? (
+                                {language ? (
                                     <SyntaxHighlighter
                                         className="rounded-md"
                                         children={String(children).replace(/\n$/, "")}
                                         style={dracula as any}
-                                        language={match[1]}
+                                        language={language}
                                         PreTag="div"
                                         {...props}
                                     />
