@@ -23,6 +23,7 @@ type ToolInstance interface {
 //       So basically kind of a result output stream.
 
 type RunResult struct {
-	Result string
-	Output string
+	Result          string
+	CustomResultTag string
+	Output          string
 }

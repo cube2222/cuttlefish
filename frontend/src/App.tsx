@@ -4,8 +4,20 @@ import Sidebar from "./Sidebar";
 import Chat from "./Chat";
 import {EventsOn} from "../wailsjs/runtime";
 import { Transition } from "@headlessui/react";
+import {registerTheme} from "echarts";
 
 const App = () => {
+    registerTheme('my_theme', {
+        "textStyle": {
+            "color": "#cccccc",
+        },
+        "title": {
+            "textStyle": {
+                "color": "#cccccc",
+            }
+        }
+    });
+
     const [curConversationID, setCurConversationID] = useState<number | null>(
         null
     );

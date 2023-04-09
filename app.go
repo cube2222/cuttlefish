@@ -21,6 +21,7 @@ import (
 
 	"gptui/database"
 	"gptui/tools"
+	"gptui/tools/chart"
 	"gptui/tools/dalle2"
 	"gptui/tools/geturl"
 	"gptui/tools/search"
@@ -48,6 +49,7 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"generate_image": &dalle2.Tool{},
 			"search":         &search.Tool{},
 			"get_url":        &geturl.Tool{},
+			"chart":          &chart.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
@@ -101,7 +103,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"search", "get_url", "terminal"},
+			ToolsEnabled:         []string{"search", "get_url", "terminal", "chart"},
 		})
 		if err != nil {
 			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)
@@ -282,7 +284,12 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			observationString := "Observation: "
 			observationString += result.Result
 			observationString += "\n"
-			observationString += "```\n" + result.Output + "\n```"
+			observationString += "```"
+			if result.CustomResultTag != "" {
+				observationString += result.CustomResultTag
+			}
+			observationString += "\n"
+			observationString += result.Output + "\n```"
 
 			if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 				ConversationID: conversationID,

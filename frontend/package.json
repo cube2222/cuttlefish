@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "echarts-for-react": "^3.0.2",
     "highlight.js": "^11.7.0",
     "iconoir-react": "^6.5.0",
     "marked": "^4.3.0",

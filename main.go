@@ -9,7 +9,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"gptui/database"
 )
@@ -26,9 +26,9 @@ var ddl string
 func main() {
 	ctx := context.Background()
 
-	// db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)")
 	// db, err := sql.Open("sqlite3", "file:gptui.db?cache=shared&mode=rwc&_foreign_keys=1&_journal_mode=WAL&_busy_timeout=5000&_loc=auto")
-	db, err := sql.Open("sqlite3", "file:gptui.db?mode=rwc&_foreign_keys=1&_busy_timeout=5000&_loc=auto")
+	// db, err := sql.Open("sqlite3", "file:gptui.db?mode=rwc&_foreign_keys=1&_busy_timeout=5000&_loc=auto")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,12 +46,9 @@ func main() {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:  "wails-events",
-		Width:  1024,
-		Height: 768,
-		// Frameless:        true,
-		// AlwaysOnTop:      true,
-		// WindowStartState: options.Minimised,
+		Title:            "OctoAI Chat",
+		Width:            1024,
+		Height:           768,
 		Assets:           assets,
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,

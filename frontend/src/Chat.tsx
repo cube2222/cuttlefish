@@ -10,6 +10,7 @@ import Message = database.Message;
 import Conversation = database.Conversation;
 import {capitalizeFirstLetter, isJSONString} from "./helpers";
 import ChatInputForm from "./ChatInputForm";
+import ReactECharts from 'echarts-for-react';
 
 interface Props {
     conversationID: number | null;
@@ -87,14 +88,17 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                 children={message.content}
                 components={{
                     code({node, inline, className, children, ...props}) {
-                        // TODO: Render tool use in a special way. I.e. Python should print the python code nicely.
                         const match = /language-(\w+)/.exec(className || "");
                         let language = match ? match[1] : null;
                         if (!language && isJSONString(String(children))) {
                             language = "json";
                         }
                         if (language == "action") {
+                            // TODO: Render tool use in a special way. I.e. Python should print the python code nicely.
                             language = "json";
+                        }
+                        if (language == "chart" && isJSONString(String(children))) {
+                            return <ReactECharts theme={"my_theme"} style={{ width: "400px", height: "400px" }} option={JSON.parse(String(children))}/>
                         }
                         if (inline) {
                             return (
