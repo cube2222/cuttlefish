@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strings"
 	"sync"
 	"text/template"
@@ -23,6 +22,7 @@ import (
 	"gptui/database"
 	"gptui/tools"
 	"gptui/tools/dalle2"
+	"gptui/tools/search"
 	"gptui/tools/terminal"
 )
 
@@ -43,10 +43,9 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 		ctx:     ctx,
 		queries: queries,
 		tools: map[string]tools.Tool{
-			"terminal": &terminal.Tool{},
-			"generate_image": &dalle2.Tool{
-				OpenAIToken: os.Getenv("OPENAI_API_KEY"),
-			},
+			"terminal":       &terminal.Tool{},
+			"generate_image": &dalle2.Tool{},
+			"search":         &search.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
@@ -100,7 +99,7 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{},
+			ToolsEnabled:         []string{"search"},
 		})
 		if err != nil {
 			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)

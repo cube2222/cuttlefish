@@ -12,7 +12,6 @@ import (
 )
 
 type Tool struct {
-	OpenAIToken string
 }
 
 func (t *Tool) Description() string {
