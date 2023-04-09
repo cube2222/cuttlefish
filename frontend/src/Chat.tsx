@@ -77,7 +77,6 @@ const Chat = ({conversationID, setConversationID}: Props) => {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert("Code copied to clipboard!");
     };
 
     const renderMarkdown = (message: Message) => {

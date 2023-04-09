@@ -100,7 +100,6 @@ Answer:
 
 	default:
 		// Heuristics.
-		var sb strings.Builder
 		var mainContent *goquery.Selection
 		// Try to select the main content element using the article tag
 		// Otherwise, try to select the main content element using the heuristic approach
@@ -121,8 +120,11 @@ Answer:
 			return "", fmt.Errorf("could not find main content element")
 		}
 
-		sb.WriteString(mainContent.Text())
-
-		return sb.String(), nil
+		outParts := strings.Split(mainContent.Text(), " ")
+		if len(outParts) > 300 {
+			outParts = outParts[:300]
+			outParts = append(outParts, "...")
+		}
+		return strings.Join(outParts, " "), nil
 	}
 }
