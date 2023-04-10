@@ -499,16 +499,16 @@ func (a *App) GetSettings() (database.Settings, error) {
 	return settings, nil
 }
 
-func (a *App) SaveSettings(settings database.Settings) error {
+func (a *App) SaveSettings(settings database.Settings) (database.Settings, error) {
 	_, err := a.queries.GetKeyValue(a.ctx, "settings")
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("couldn't check if settings keyvalue exists: %w", err)
+		return database.Settings{}, fmt.Errorf("couldn't check if settings keyvalue exists: %w", err)
 	}
 	settingsExist := !errors.Is(err, sql.ErrNoRows)
 
 	oldSettings, err := a.getSettingsRaw()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
+		return database.Settings{}, err
 	}
 	if settings.OpenAIAPIKey == "*****" {
 		settings.OpenAIAPIKey = oldSettings.OpenAIAPIKey
@@ -516,21 +516,21 @@ func (a *App) SaveSettings(settings database.Settings) error {
 
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
-		return err
+		return database.Settings{}, err
 	}
 	if settingsExist {
 		if err := a.queries.UpdateKeyValue(a.ctx, database.UpdateKeyValueParams{
 			Key:   "settings",
 			Value: string(settingsJSON),
 		}); err != nil {
-			return fmt.Errorf("couldn't save settings: %w", err)
+			return database.Settings{}, fmt.Errorf("couldn't save settings: %w", err)
 		}
 	} else {
 		if err := a.queries.CreateKeyValue(a.ctx, database.CreateKeyValueParams{
 			Key:   "settings",
 			Value: string(settingsJSON),
 		}); err != nil {
-			return fmt.Errorf("couldn't save settings: %w", err)
+			return database.Settings{}, fmt.Errorf("couldn't save settings: %w", err)
 		}
 	}
 
@@ -538,7 +538,7 @@ func (a *App) SaveSettings(settings database.Settings) error {
 	defer a.m.Unlock()
 	a.settings = settings
 
-	return nil
+	return settings, nil
 }
 
 type AvailableTool struct {

@@ -44,7 +44,7 @@ const AppSettingsButton = ({className}: Props) => {
     }, [settings, openAiApiKey, model, googleCloudApiKey, customSearchEngineId, pythonInterpreterPath])
 
     const saveSettings = async () => {
-        await SaveSettings({
+        const newSettings = await SaveSettings({
             openAiApiKey: openAiApiKey,
             model: model,
             search: {
@@ -57,6 +57,7 @@ const AppSettingsButton = ({className}: Props) => {
                 interpreterPath: pythonInterpreterPath,
             }
         } as database.Settings);
+        setSettings(newSettings);
         setChanged(false);
     }
 

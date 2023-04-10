@@ -5,6 +5,7 @@ import Chat from "./Chat";
 import {EventsOn} from "../wailsjs/runtime";
 import { Transition } from "@headlessui/react";
 import {registerTheme} from "echarts";
+import WelcomePopup from "./WelcomePopup";
 
 const App = () => {
     registerTheme('my_theme', {
@@ -43,6 +44,7 @@ const App = () => {
         <div className="flex h-screen overflow-hidden">
             <Sidebar curConversationID={curConversationID} setCurConversationID={setCurConversationID}/>
             <Chat conversationID={curConversationID} setConversationID={setCurConversationID}/>
+            <WelcomePopup/>
             <Transition
                 show={errorMessage != ""}
                 as={Fragment}

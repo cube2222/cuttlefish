@@ -25,7 +25,7 @@ export function RerunFromMessage(arg1:number,arg2:number):Promise<void>;
 
 export function ResetDefaultConversationSettings():Promise<database.ConversationSetting>;
 
-export function SaveSettings(arg1:database.Settings):Promise<void>;
+export function SaveSettings(arg1:database.Settings):Promise<database.Settings>;
 
 export function SendMessage(arg1:number,arg2:string):Promise<database.Message>;
 
