@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 
 CREATE TABLE IF NOT EXISTS conversation_settings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  is_default BOOLEAN UNIQUE, -- Null if not default.
   system_prompt_template TEXT NOT NULL DEFAULT 'You are a helpful assistant. Respond to the queries as best as you can.',
   tools_enabled TEXT_ARRAY NOT NULL DEFAULT '[]'
 );

@@ -13,6 +13,10 @@ import (
 type Tool struct {
 }
 
+func (t *Tool) Name() string {
+	return "Terminal"
+}
+
 func (t *Tool) Description() string {
 	return "run commands in a bash shell"
 }

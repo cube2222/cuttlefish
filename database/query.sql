@@ -33,17 +33,30 @@ UPDATE conversations SET generating = false WHERE id = ?;
 -- name: GetConversationSettings :one
 SELECT * FROM conversation_settings WHERE id = ?;
 
+-- name: GetDefaultConversationSettings :one
+SELECT * FROM conversation_settings WHERE is_default = true;
+
 -- name: CreateConversationSettings :one
 INSERT INTO conversation_settings (system_prompt_template, tools_enabled) VALUES (?, ?) RETURNING *;
 
--- name: UpdateConversationSettings :exec
-UPDATE conversation_settings SET system_prompt_template = ?, tools_enabled = ? WHERE id = ?;
+-- name: UpdateConversationSettings :one
+UPDATE conversation_settings SET system_prompt_template = ?, tools_enabled = ? WHERE id = ? RETURNING *;
+
+-- name: CreateDefaultConversationSettings :one
+INSERT INTO conversation_settings (system_prompt_template, tools_enabled, is_default) VALUES (?, ?, true) RETURNING *;
+
+-- Doesn't work...
+-- -- name: SetDefaultConversationSettings :exec
+-- INSERT INTO conversation_settings (system_prompt_template, tools_enabled, is_default) VALUES (@systemprompttemplate, @toolsenabled, true) ON CONFLICT (is_default) DO UPDATE SET system_prompt_template = @systemprompttemplate, tools_enabled = @toolsenabled;
 
 -- name: GetKeyValue :one
 SELECT * FROM key_values WHERE key = ?;
 
--- name: SetKeyValue :exec
-INSERT INTO key_values (key, value) VALUES (@key, @value) ON CONFLICT (key) DO UPDATE SET value = @value;
+-- name: CreateKeyValue :exec
+INSERT INTO key_values (key, value) VALUES (?, ?);
+
+-- name: UpdateKeyValue :exec
+UPDATE key_values SET value = ? WHERE key = ?;
 
 -- name: CloneConversationSettings :one
 INSERT INTO conversation_settings(system_prompt_template, tools_enabled) SELECT system_prompt_template, tools_enabled FROM conversation_settings WHERE conversation_settings.id = ? RETURNING *;

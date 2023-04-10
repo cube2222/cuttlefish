@@ -1,16 +1,25 @@
 import {EditPencil} from "iconoir-react";
 import React, {Fragment, useEffect, useState} from "react";
 import {Dialog, Switch, Transition} from "@headlessui/react";
-import {GetConversationSettings, UpdateConversationSettings} from "../wailsjs/go/main/App";
-import {database} from "../wailsjs/go/models";
+import {
+    GetAvailableTools,
+    GetConversationSettings,
+    GetDefaultConversationSettings, SetDefaultConversationSettings,
+    UpdateConversationSettings
+} from "../wailsjs/go/main/App";
+import {database, main} from "../wailsjs/go/models";
 import {capitalizeFirstLetter} from "./helpers";
+import AvailableTool = main.AvailableTool;
 
 interface Props {
     className?: string;
-    conversationSettingsID: number;
+    conversationSettingsID: number | null;
 }
 
 const ConversationSettingsButton = ({className, conversationSettingsID}: Props) => {
+    const isDefault = conversationSettingsID === null;
+
+    const [availableTools, setAvailableTools] = useState<AvailableTool[]>([]);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [settings, setSettings] = useState<database.ConversationSetting>();
     const [systemPromptTemplate, setSystemPromptTemplate] = useState("");
@@ -18,12 +27,26 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
     const [changed, setChanged] = useState(false);
 
     useEffect(() => {
-        GetConversationSettings(conversationSettingsID).then((curSettings) => {
-            setSettings(curSettings);
-            setSystemPromptTemplate(curSettings.systemPromptTemplate);
-            setToolsEnabled(new Set(curSettings.toolsEnabled));
-        });
-    }, []);
+        GetAvailableTools().then((tools: AvailableTool[]) => {
+            setAvailableTools(tools);
+        })
+    })
+
+    useEffect(() => {
+        if (!isDefault) {
+            GetConversationSettings(conversationSettingsID).then((curSettings) => {
+                setSettings(curSettings);
+                setSystemPromptTemplate(curSettings.systemPromptTemplate);
+                setToolsEnabled(new Set(curSettings.toolsEnabled));
+            });
+        } else {
+            GetDefaultConversationSettings().then((curSettings) => {
+                setSettings(curSettings);
+                setSystemPromptTemplate(curSettings.systemPromptTemplate);
+                setToolsEnabled(new Set(curSettings.toolsEnabled));
+            });
+        }
+    }, [isSettingsModalOpen]);
 
     useEffect(() => {
         if (!settings) {
@@ -31,9 +54,9 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
         }
         setChanged(
             systemPromptTemplate !== settings.systemPromptTemplate
-            || Array.from(toolsEnabled) != settings.toolsEnabled
+            || !arraySetsEqual(Array.from(toolsEnabled), settings.toolsEnabled)
         );
-    }, [systemPromptTemplate])
+    }, [settings, systemPromptTemplate, toolsEnabled])
 
     const setToolEnabled = (tool: string, enabled: boolean) => {
         let toolsEnabledUpdated = new Set(toolsEnabled);
@@ -46,11 +69,20 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
     }
 
     const saveSettings = async () => {
-        await UpdateConversationSettings({
-            id: conversationSettingsID,
-            systemPromptTemplate: systemPromptTemplate,
-            toolsEnabled: Array.from(toolsEnabled),
-        });
+        if (!isDefault) {
+            const curSettings = await UpdateConversationSettings({
+                id: conversationSettingsID,
+                systemPromptTemplate: systemPromptTemplate,
+                toolsEnabled: Array.from(toolsEnabled),
+            });
+            setSettings(curSettings);
+        } else {
+            const curSettings = await SetDefaultConversationSettings({
+                systemPromptTemplate: systemPromptTemplate,
+                toolsEnabled: Array.from(toolsEnabled),
+            });
+            setSettings(curSettings);
+        }
         setChanged(false);
     }
 
@@ -85,8 +117,7 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
                         leaveTo="opacity-0 scale-95"
                     >
                         <Dialog.Panel className="flex flex-col fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
-                            <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">Conversation
-                                Settings</Dialog.Title>
+                            <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">{isDefault && "Default "}Conversation Settings</Dialog.Title>
                             <div className="flex-1 divide-y divide-gray-700 overflow-y-auto">
                                 <div className="flex flex-col p-2">
                                     <label htmlFor="textInput1" className="text-gray-400 mb-2">
@@ -101,19 +132,19 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
                                 <div className="p-2">
                                     <h2 className="text-md font-bold text-gray-400 mb-2">Enabled Tools</h2>
                                     <div className="flex flex-col">
-                                        {["terminal", "dalle2"].map((tool) => {
+                                        {availableTools.map((tool) => {
                                             return <div className="flex items-center justify-between p-2">
-                                                <p className="text-gray-400">{capitalizeFirstLetter(tool)}</p>
+                                                <p className="text-gray-400">{tool.name}</p>
                                                 <Switch
-                                                    checked={toolsEnabled.has(tool)}
-                                                    onChange={(newValue) => setToolEnabled(tool, newValue)}
+                                                    checked={toolsEnabled.has(tool.ID)}
+                                                    onChange={(newValue) => setToolEnabled(tool.ID, newValue)}
                                                     className={`${
-                                                        toolsEnabled.has(tool) ? 'bg-gray-400' : 'bg-gray-700'
+                                                        toolsEnabled.has(tool.ID) ? 'bg-gray-400' : 'bg-gray-700'
                                                     } relative inline-flex h-6 w-11 items-center rounded-full border border-gray-300 border-opacity-50`}
                                                 >
                                                 <span
                                                     className={`${
-                                                        toolsEnabled.has(tool) ? 'translate-x-6' : 'translate-x-1'
+                                                        toolsEnabled.has(tool.ID) ? 'translate-x-6' : 'translate-x-1'
                                                     } inline-block h-4 w-4 transform rounded-full bg-gray-200 transition`}
                                                 />
                                                 </Switch>
@@ -137,6 +168,13 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
             </Transition>
         </>
     )
+}
+
+function arraySetsEqual(arr1: string[], arr2: string[]): boolean {
+    const arr1Sorted = arr1.sort();
+    const arr2Sorted = arr2.sort();
+    if (arr1Sorted.length != arr2Sorted.length) return false;
+    return arr1Sorted.every((element, index) => element === arr2Sorted[index]);
 }
 
 export default ConversationSettingsButton;

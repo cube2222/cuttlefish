@@ -12,6 +12,10 @@ import (
 type Tool struct {
 }
 
+func (t *Tool) Name() string {
+	return "Chart Renderer"
+}
+
 func (t *Tool) Description() string {
 	return "plot data on charts using Apache ECharts"
 }

@@ -14,12 +14,20 @@ export function DeleteConversation(arg1) {
   return window['go']['main']['App']['DeleteConversation'](arg1);
 }
 
+export function GetAvailableTools() {
+  return window['go']['main']['App']['GetAvailableTools']();
+}
+
 export function GetConversation(arg1) {
   return window['go']['main']['App']['GetConversation'](arg1);
 }
 
 export function GetConversationSettings(arg1) {
   return window['go']['main']['App']['GetConversationSettings'](arg1);
+}
+
+export function GetDefaultConversationSettings() {
+  return window['go']['main']['App']['GetDefaultConversationSettings']();
 }
 
 export function GetSettings() {
@@ -40,6 +48,10 @@ export function SaveSettings(arg1) {
 
 export function SendMessage(arg1, arg2) {
   return window['go']['main']['App']['SendMessage'](arg1, arg2);
+}
+
+export function SetDefaultConversationSettings(arg1) {
+  return window['go']['main']['App']['SetDefaultConversationSettings'](arg1);
 }
 
 export function UpdateConversationSettings(arg1) {

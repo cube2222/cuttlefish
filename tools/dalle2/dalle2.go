@@ -14,6 +14,10 @@ import (
 type Tool struct {
 }
 
+func (t *Tool) Name() string {
+	return "Image Generator"
+}
+
 func (t *Tool) Description() string {
 	return "generate images using dalle2"
 }

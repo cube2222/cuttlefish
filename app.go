@@ -101,9 +101,13 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 		if len(title) > 20 {
 			title = title[:13] + "..."
 		}
+		defaultConversationSettings, err := a.GetDefaultConversationSettings()
+		if err != nil {
+			return database.Message{}, fmt.Errorf("couldn't get default conversation settings: %w", err)
+		}
 		settings, err := a.queries.CreateConversationSettings(a.ctx, database.CreateConversationSettingsParams{
-			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"search", "get_url", "terminal", "chart"},
+			SystemPromptTemplate: defaultConversationSettings.SystemPromptTemplate,
+			ToolsEnabled:         defaultConversationSettings.ToolsEnabled,
 		})
 		if err != nil {
 			return database.Message{}, fmt.Errorf("couldn't create conversation settings: %w", err)
@@ -294,7 +298,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			if _, err := a.queries.CreateMessage(genCtx, database.CreateMessageParams{
 				ConversationID: conversationID,
 				Content:        observationString,
-				Author:         action.Tool,
+				Author:         a.tools[action.Tool].Name(),
 			}); err != nil {
 				return fmt.Errorf("couldn't create observation message: %w", err)
 			}
@@ -419,8 +423,37 @@ func (a *App) GetConversationSettings(conversationSettingsID int) (database.Conv
 	return a.queries.GetConversationSettings(a.ctx, conversationSettingsID)
 }
 
-func (a *App) UpdateConversationSettings(params database.UpdateConversationSettingsParams) error {
+func (a *App) UpdateConversationSettings(params database.UpdateConversationSettingsParams) (database.ConversationSetting, error) {
 	return a.queries.UpdateConversationSettings(a.ctx, params)
+}
+
+func (a *App) GetDefaultConversationSettings() (database.ConversationSetting, error) {
+	conversationSettings, err := a.queries.GetDefaultConversationSettings(a.ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return database.ConversationSetting{
+			ID:                   -1,
+			SystemPromptTemplate: defaultSystemPromptTemplate,
+			ToolsEnabled:         []string{"terminal", "get_url", "chart"},
+		}, nil
+	} else if err != nil {
+		return database.ConversationSetting{}, fmt.Errorf("couldn't get default conversation settings: %w", err)
+	}
+	return conversationSettings, nil
+}
+
+func (a *App) SetDefaultConversationSettings(params database.CreateDefaultConversationSettingsParams) (database.ConversationSetting, error) {
+	defaultConversationSettings, err := a.queries.GetDefaultConversationSettings(a.ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return a.queries.CreateDefaultConversationSettings(a.ctx, params)
+	} else if err != nil {
+		return database.ConversationSetting{}, fmt.Errorf("couldn't get default conversation settings: %w", err)
+	}
+
+	return a.queries.UpdateConversationSettings(a.ctx, database.UpdateConversationSettingsParams{
+		ID:                   defaultConversationSettings.ID,
+		SystemPromptTemplate: params.SystemPromptTemplate,
+		ToolsEnabled:         params.ToolsEnabled,
+	})
 }
 
 func (a *App) getSettingsRaw() (database.Settings, error) {
@@ -455,6 +488,12 @@ func (a *App) GetSettings() (database.Settings, error) {
 }
 
 func (a *App) SaveSettings(settings database.Settings) error {
+	_, err := a.queries.GetKeyValue(a.ctx, "settings")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("couldn't check if settings keyvalue exists: %w", err)
+	}
+	settingsExist := !errors.Is(err, sql.ErrNoRows)
+
 	oldSettings, err := a.getSettingsRaw()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
@@ -467,11 +506,20 @@ func (a *App) SaveSettings(settings database.Settings) error {
 	if err != nil {
 		return err
 	}
-	if err := a.queries.SetKeyValue(a.ctx, database.SetKeyValueParams{
-		Key:   "settings",
-		Value: string(settingsJSON),
-	}); err != nil {
-		return fmt.Errorf("couldn't save settings: %w", err)
+	if settingsExist {
+		if err := a.queries.UpdateKeyValue(a.ctx, database.UpdateKeyValueParams{
+			Key:   "settings",
+			Value: string(settingsJSON),
+		}); err != nil {
+			return fmt.Errorf("couldn't save settings: %w", err)
+		}
+	} else {
+		if err := a.queries.CreateKeyValue(a.ctx, database.CreateKeyValueParams{
+			Key:   "settings",
+			Value: string(settingsJSON),
+		}); err != nil {
+			return fmt.Errorf("couldn't save settings: %w", err)
+		}
 	}
 
 	a.m.Lock()
@@ -479,4 +527,23 @@ func (a *App) SaveSettings(settings database.Settings) error {
 	a.settings = settings
 
 	return nil
+}
+
+type AvailableTool struct {
+	Name string `json:"name"`
+	ID   string `json:"ID"`
+}
+
+func (a *App) GetAvailableTools() []AvailableTool {
+	var out []AvailableTool
+	for id, tool := range a.tools {
+		out = append(out, AvailableTool{
+			Name: tool.Name(),
+			ID:   id,
+		})
+	}
+	slices.SortFunc(out, func(a, b AvailableTool) bool {
+		return a.Name < b.Name
+	})
+	return out
 }

@@ -17,6 +17,10 @@ import (
 type Tool struct {
 }
 
+func (t *Tool) Name() string {
+	return "URL Getter"
+}
+
 func (t *Tool) Description() string {
 	return "fetch the contents of a url; useful for getting details about a search result"
 }

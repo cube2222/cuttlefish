@@ -9,6 +9,7 @@ import (
 // TODO: Some tools might like to keep state for the whole duration of the "Chain" of commands that GPT does. i.e. a Python REPL.
 
 type Tool interface {
+	Name() string
 	Description() string
 	ArgumentDescriptions() map[string]string
 	Instantiate(ctx context.Context, settings database.Settings) (ToolInstance, error)

@@ -46,8 +46,9 @@ const Sidebar = ({curConversationID, setCurConversationID}: Props) => {
                         }}
                     >
                         {/*<div className="w-10 h-10 rounded-full bg-gray-300 mr-2"></div>*/}
-                        <div className="flex-1 text-gray-500 px-2">
+                        <div className="relative flex-1 text-gray-500 px-2">
                             <p className="text-gray-500">Create new conversation...</p>
+                            <ConversationSettingsButton className="absolute scale-75 top-0 right-1 text-gray-500 hover:text-gray-400" conversationSettingsID={null}/>
                         </div>
                     </div>
                     {conversations.map((conversation, index) => (

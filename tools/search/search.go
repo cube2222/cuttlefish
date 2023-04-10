@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"google.golang.org/api/customsearch/v1"
 	"google.golang.org/api/option"
@@ -17,6 +18,10 @@ import (
 // https://support.google.com/googleapi/answer/6158862?hl=en
 
 type Tool struct {
+}
+
+func (t *Tool) Name() string {
+	return "Search"
 }
 
 func (t *Tool) Description() string {
@@ -47,6 +52,9 @@ func (t *ToolInstance) Run(ctx context.Context, args map[string]interface{}) (*t
 		return nil, fmt.Errorf("search phrase is not a string")
 	}
 	searchService, err := customsearch.NewService(ctx, option.WithAPIKey(t.GoogleCloudAPIKey))
+	if err != nil {
+		return nil, fmt.Errorf("could not create search service: %w", err)
+	}
 	res, err := searchService.Cse.List().
 		Cx(t.CustomSearchEngineID).
 		Num(5).

@@ -21,7 +21,7 @@ const AppSettingsButton = ({className}: Props) => {
             setOpenAiApiKey(curSettings.openAiApiKey);
             setModel(curSettings.model);
         });
-    }, []);
+    }, [isSettingsModalOpen]);
 
     useEffect(() => {
         if (!settings) {
@@ -31,7 +31,7 @@ const AppSettingsButton = ({className}: Props) => {
             openAiApiKey !== settings.openAiApiKey
             || model !== settings.model
         );
-    }, [openAiApiKey, model])
+    }, [settings, openAiApiKey, model])
 
     const saveSettings = async () => {
         await SaveSettings({

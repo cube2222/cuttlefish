@@ -41,6 +41,8 @@ export namespace database {
 	}
 	export class ConversationSetting {
 	    id: number;
+	    // Go type: sql
+	    isDefault: any;
 	    systemPromptTemplate: string;
 	    toolsEnabled: string[];
 	
@@ -51,6 +53,39 @@ export namespace database {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
+	        this.isDefault = this.convertValues(source["isDefault"], null);
+	        this.systemPromptTemplate = source["systemPromptTemplate"];
+	        this.toolsEnabled = source["toolsEnabled"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class CreateDefaultConversationSettingsParams {
+	    systemPromptTemplate: string;
+	    toolsEnabled: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateDefaultConversationSettingsParams(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.systemPromptTemplate = source["systemPromptTemplate"];
 	        this.toolsEnabled = source["toolsEnabled"];
 	    }
@@ -101,6 +136,25 @@ export namespace database {
 	        this.systemPromptTemplate = source["systemPromptTemplate"];
 	        this.toolsEnabled = source["toolsEnabled"];
 	        this.id = source["id"];
+	    }
+	}
+
+}
+
+export namespace main {
+	
+	export class AvailableTool {
+	    name: string;
+	    ID: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AvailableTool(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.ID = source["ID"];
 	    }
 	}
 

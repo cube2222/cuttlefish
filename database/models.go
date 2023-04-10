@@ -5,6 +5,7 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -17,9 +18,10 @@ type Conversation struct {
 }
 
 type ConversationSetting struct {
-	ID                   int         `json:"id"`
-	SystemPromptTemplate string      `json:"systemPromptTemplate"`
-	ToolsEnabled         StringArray `json:"toolsEnabled"`
+	ID                   int          `json:"id"`
+	IsDefault            sql.NullBool `json:"isDefault"`
+	SystemPromptTemplate string       `json:"systemPromptTemplate"`
+	ToolsEnabled         StringArray  `json:"toolsEnabled"`
 }
 
 type ConversationTemplate struct {
