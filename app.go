@@ -24,6 +24,7 @@ import (
 	"gptui/tools/chart"
 	"gptui/tools/dalle2"
 	"gptui/tools/geturl"
+	"gptui/tools/python"
 	"gptui/tools/search"
 	"gptui/tools/terminal"
 )
@@ -50,6 +51,7 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"search":         &search.Tool{},
 			"get_url":        &geturl.Tool{},
 			"chart":          &chart.Tool{},
+			"python":         &python.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
@@ -433,7 +435,7 @@ func (a *App) GetDefaultConversationSettings() (database.ConversationSetting, er
 		return database.ConversationSetting{
 			ID:                   -1,
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"terminal", "get_url", "chart"},
+			ToolsEnabled:         []string{"terminal", "python", "get_url", "chart"},
 		}, nil
 	} else if err != nil {
 		return database.ConversationSetting{}, fmt.Errorf("couldn't get default conversation settings: %w", err)
@@ -461,6 +463,9 @@ func (a *App) getSettingsRaw() (database.Settings, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.Settings{
 			Model: "gpt-3.5-turbo",
+			Python: database.PythonSettings{
+				InterpreterPath: "python3",
+			},
 		}, nil
 	} else if err != nil {
 		return database.Settings{}, err

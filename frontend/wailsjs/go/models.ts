@@ -122,6 +122,18 @@ export namespace database {
 	        this.author = source["author"];
 	    }
 	}
+	export class PythonSettings {
+	    interpreterPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PythonSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.interpreterPath = source["interpreterPath"];
+	    }
+	}
 	export class SearchSettings {
 	    googleCustomSearch: GoogleCustomSearchSettings;
 	
@@ -156,6 +168,7 @@ export namespace database {
 	    openAiApiKey: string;
 	    model: string;
 	    search: SearchSettings;
+	    python: PythonSettings;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -166,6 +179,7 @@ export namespace database {
 	        this.openAiApiKey = source["openAiApiKey"];
 	        this.model = source["model"];
 	        this.search = this.convertValues(source["search"], SearchSettings);
+	        this.python = this.convertValues(source["python"], PythonSettings);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

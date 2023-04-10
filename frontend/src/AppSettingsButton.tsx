@@ -16,6 +16,7 @@ const AppSettingsButton = ({className}: Props) => {
     const [googleCloudApiKey, setGoogleCloudApiKey] = useState("");
     const [customSearchEngineId, setCustomSearchEngineId] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
+    const [pythonInterpreterPath, setPythonInterpreterPath] = useState("");
     const [changed, setChanged] = useState(false);
 
     useEffect(() => {
@@ -25,6 +26,7 @@ const AppSettingsButton = ({className}: Props) => {
             setModel(curSettings.model);
             setGoogleCloudApiKey(curSettings.search.googleCustomSearch.googleCloudApiKey);
             setCustomSearchEngineId(curSettings.search.googleCustomSearch.customSearchEngineId);
+            setPythonInterpreterPath(curSettings.python.interpreterPath);
         });
     }, [isSettingsModalOpen]);
 
@@ -37,8 +39,9 @@ const AppSettingsButton = ({className}: Props) => {
             || model !== settings.model
             || googleCloudApiKey !== settings.search.googleCustomSearch.googleCloudApiKey
             || customSearchEngineId !== settings.search.googleCustomSearch.customSearchEngineId
+            || pythonInterpreterPath !== settings.python.interpreterPath
         );
-    }, [settings, openAiApiKey, model, googleCloudApiKey, customSearchEngineId])
+    }, [settings, openAiApiKey, model, googleCloudApiKey, customSearchEngineId, pythonInterpreterPath])
 
     const saveSettings = async () => {
         await SaveSettings({
@@ -49,6 +52,9 @@ const AppSettingsButton = ({className}: Props) => {
                     googleCloudApiKey: googleCloudApiKey,
                     customSearchEngineId: customSearchEngineId,
                 }
+            },
+            python: {
+                interpreterPath: pythonInterpreterPath,
             }
         } as database.Settings);
         setChanged(false);
@@ -139,6 +145,18 @@ const AppSettingsButton = ({className}: Props) => {
                                                    className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
                                         </div>
 
+                                    </div>
+                                </div>
+                                <div className="p-2">
+                                    <h2 className="text-md font-bold text-gray-400 mb-2">Python</h2>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center justify-between px-2 py-1">
+                                            <p className="text-gray-400">Path to Python 3 Interpreter</p>
+                                            <input type="text"
+                                                   value={pythonInterpreterPath}
+                                                   onChange={(event) => setPythonInterpreterPath(event.target.value)}
+                                                   className="border border-gray-300 border-opacity-50 p-2 h-8 bg-gray-700 text-gray-300 rounded-md"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
