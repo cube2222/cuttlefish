@@ -30,6 +30,10 @@ export function Messages(arg1) {
   return window['go']['main']['App']['Messages'](arg1);
 }
 
+export function RerunFromMessage(arg1, arg2) {
+  return window['go']['main']['App']['RerunFromMessage'](arg1, arg2);
+}
+
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
 }

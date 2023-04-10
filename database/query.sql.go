@@ -32,11 +32,9 @@ func (q *Queries) AppendMessage(ctx context.Context, arg AppendMessageParams) (M
 }
 
 const cloneConversationSettings = `-- name: CloneConversationSettings :one
-
 INSERT INTO conversation_settings(system_prompt_template, tools_enabled) SELECT system_prompt_template, tools_enabled FROM conversation_settings WHERE conversation_settings.id = ? RETURNING id, system_prompt_template, tools_enabled
 `
 
-// TODO: Not sure if this will actually work.
 func (q *Queries) CloneConversationSettings(ctx context.Context, id int) (ConversationSetting, error) {
 	row := q.db.QueryRowContext(ctx, cloneConversationSettings, id)
 	var i ConversationSetting
@@ -170,9 +168,11 @@ func (q *Queries) GetKeyValue(ctx context.Context, key string) (KeyValue, error)
 }
 
 const getMessage = `-- name: GetMessage :one
+
 SELECT id, conversation_id, content, author FROM messages WHERE id = ?
 `
 
+// TODO: Change all wildcards to explicit column lists.
 func (q *Queries) GetMessage(ctx context.Context, id int) (Message, error) {
 	row := q.db.QueryRowContext(ctx, getMessage, id)
 	var i Message
@@ -265,6 +265,20 @@ UPDATE conversations SET generating = true WHERE id = ?
 
 func (q *Queries) MarkGenerationStarted(ctx context.Context, id int) error {
 	_, err := q.db.ExecContext(ctx, markGenerationStarted, id)
+	return err
+}
+
+const resetConversationFrom = `-- name: ResetConversationFrom :exec
+DELETE FROM messages WHERE conversation_id = ? AND id > ?
+`
+
+type ResetConversationFromParams struct {
+	ConversationID int `json:"conversationID"`
+	ID             int `json:"id"`
+}
+
+func (q *Queries) ResetConversationFrom(ctx context.Context, arg ResetConversationFromParams) error {
+	_, err := q.db.ExecContext(ctx, resetConversationFrom, arg.ConversationID, arg.ID)
 	return err
 }
 

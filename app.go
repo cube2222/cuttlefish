@@ -342,6 +342,23 @@ func (a *App) messagesToGPTMessages(conversationSettings database.ConversationSe
 	return gptMessages, nil
 }
 
+func (a *App) RerunFromMessage(conversationID int, messageID int) error {
+	if err := a.queries.ResetConversationFrom(a.ctx, database.ResetConversationFromParams{
+		ConversationID: conversationID,
+		ID:             messageID,
+	}); err != nil {
+		return fmt.Errorf("couldn't reset conversation: %w", err)
+	}
+
+	go func() {
+		if err := a.runChainOfMessages(conversationID); err != nil && !errors.Is(err, context.Canceled) {
+			runtime.EventsEmit(a.ctx, "async-error", err.Error())
+		}
+	}()
+
+	return nil
+}
+
 //go:embed default_system_prompt.gotmpl
 var defaultSystemPromptTemplate string
 

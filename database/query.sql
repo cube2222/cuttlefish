@@ -50,3 +50,6 @@ INSERT INTO conversation_settings(system_prompt_template, tools_enabled) SELECT 
 
 -- name: CreateConversationTemplate :one
 INSERT INTO conversation_templates(name, conversation_settings_id) VALUES (?, ?) RETURNING *;
+
+-- name: ResetConversationFrom :exec
+DELETE FROM messages WHERE conversation_id = ? AND id > ?;

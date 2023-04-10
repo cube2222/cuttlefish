@@ -16,6 +16,8 @@ export function GetSettings():Promise<database.Settings>;
 
 export function Messages(arg1:number):Promise<Array<database.Message>>;
 
+export function RerunFromMessage(arg1:number,arg2:number):Promise<void>;
+
 export function SaveSettings(arg1:database.Settings):Promise<void>;
 
 export function SendMessage(arg1:number,arg2:string):Promise<database.Message>;
