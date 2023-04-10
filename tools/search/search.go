@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"google.golang.org/api/customsearch/v1"
 	"google.golang.org/api/option"
