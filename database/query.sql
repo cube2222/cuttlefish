@@ -45,6 +45,9 @@ UPDATE conversation_settings SET system_prompt_template = ?, tools_enabled = ? W
 -- name: CreateDefaultConversationSettings :one
 INSERT INTO conversation_settings (system_prompt_template, tools_enabled, is_default) VALUES (?, ?, true) RETURNING *;
 
+-- name: DeleteDefaultConversationSettings :exec
+DELETE FROM conversation_settings WHERE is_default = true;
+
 -- Doesn't work...
 -- -- name: SetDefaultConversationSettings :exec
 -- INSERT INTO conversation_settings (system_prompt_template, tools_enabled, is_default) VALUES (@systemprompttemplate, @toolsenabled, true) ON CONFLICT (is_default) DO UPDATE SET system_prompt_template = @systemprompttemplate, tools_enabled = @toolsenabled;

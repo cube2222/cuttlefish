@@ -4,11 +4,12 @@ import {Dialog, Switch, Transition} from "@headlessui/react";
 import {
     GetAvailableTools,
     GetConversationSettings,
-    GetDefaultConversationSettings, SetDefaultConversationSettings,
+    GetDefaultConversationSettings,
+    ResetDefaultConversationSettings,
+    SetDefaultConversationSettings,
     UpdateConversationSettings
 } from "../wailsjs/go/main/App";
 import {database, main} from "../wailsjs/go/models";
-import {capitalizeFirstLetter} from "./helpers";
 import AvailableTool = main.AvailableTool;
 
 interface Props {
@@ -32,7 +33,7 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
         })
     })
 
-    useEffect(() => {
+    const refreshSettings = () => {
         if (!isDefault) {
             GetConversationSettings(conversationSettingsID).then((curSettings) => {
                 setSettings(curSettings);
@@ -46,7 +47,9 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
                 setToolsEnabled(new Set(curSettings.toolsEnabled));
             });
         }
-    }, [isSettingsModalOpen]);
+    }
+
+    useEffect(refreshSettings, [isSettingsModalOpen]);
 
     useEffect(() => {
         if (!settings) {
@@ -86,6 +89,12 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
         setChanged(false);
     }
 
+    const resetDefaultSettings = async () => {
+        const curSettings = await ResetDefaultConversationSettings();
+        setSettings(curSettings);
+        refreshSettings();
+    }
+
     return (
         <>
             <div onClick={() => setIsSettingsModalOpen(true)} className={"cursor-pointer " + className}>
@@ -117,7 +126,8 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
                         leaveTo="opacity-0 scale-95"
                     >
                         <Dialog.Panel className="flex flex-col fixed inset-40 z-40 bg-gray-900 rounded-md p-4">
-                            <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">{isDefault && "Default "}Conversation Settings</Dialog.Title>
+                            <Dialog.Title className="text-lg font-bold text-gray-400 mb-4">{isDefault && "Default "}Conversation
+                                Settings</Dialog.Title>
                             <div className="flex-1 divide-y divide-gray-700 overflow-y-auto">
                                 <div className="flex flex-col p-2">
                                     <label htmlFor="textInput1" className="text-gray-400 mb-2">
@@ -153,7 +163,14 @@ const ConversationSettingsButton = ({className, conversationSettingsID}: Props) 
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex justify-end">
+                            <div className="flex flex-row justify-end">
+                                {isDefault && <button
+                                  type="button"
+                                  onClick={async () => await resetDefaultSettings()}
+                                  className="bg-red-500 text-white p-2 rounded-md mt-2 mx-2"
+                                >
+                                  Reset
+                                </button>}
                                 <button
                                     type="button"
                                     onClick={async () => await saveSettings()}

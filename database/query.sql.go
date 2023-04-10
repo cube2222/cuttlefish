@@ -173,6 +173,15 @@ func (q *Queries) DeleteConversation(ctx context.Context, id int) error {
 	return err
 }
 
+const deleteDefaultConversationSettings = `-- name: DeleteDefaultConversationSettings :exec
+DELETE FROM conversation_settings WHERE is_default = true
+`
+
+func (q *Queries) DeleteDefaultConversationSettings(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteDefaultConversationSettings)
+	return err
+}
+
 const getConversation = `-- name: GetConversation :one
 SELECT id, conversation_settings_id, title, last_message_time, generating FROM conversations WHERE id = ?
 `

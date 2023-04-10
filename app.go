@@ -458,6 +458,13 @@ func (a *App) SetDefaultConversationSettings(params database.CreateDefaultConver
 	})
 }
 
+func (a *App) ResetDefaultConversationSettings() (database.ConversationSetting, error) {
+	if err := a.queries.DeleteDefaultConversationSettings(a.ctx); err != nil {
+		return database.ConversationSetting{}, fmt.Errorf("couldn't delete default conversation settings")
+	}
+	return a.GetDefaultConversationSettings()
+}
+
 func (a *App) getSettingsRaw() (database.Settings, error) {
 	keyValue, err := a.queries.GetKeyValue(a.ctx, "settings")
 	if errors.Is(err, sql.ErrNoRows) {
