@@ -90,6 +90,20 @@ export namespace database {
 	        this.toolsEnabled = source["toolsEnabled"];
 	    }
 	}
+	export class GoogleCustomSearchSettings {
+	    customSearchEngineId: string;
+	    googleCloudApiKey: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoogleCustomSearchSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.customSearchEngineId = source["customSearchEngineId"];
+	        this.googleCloudApiKey = source["googleCloudApiKey"];
+	    }
+	}
 	export class Message {
 	    id: number;
 	    conversationID: number;
@@ -108,9 +122,40 @@ export namespace database {
 	        this.author = source["author"];
 	    }
 	}
+	export class SearchSettings {
+	    googleCustomSearch: GoogleCustomSearchSettings;
+	
+	    static createFrom(source: any = {}) {
+	        return new SearchSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.googleCustomSearch = this.convertValues(source["googleCustomSearch"], GoogleCustomSearchSettings);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Settings {
 	    openAiApiKey: string;
 	    model: string;
+	    search: SearchSettings;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -120,7 +165,26 @@ export namespace database {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.openAiApiKey = source["openAiApiKey"];
 	        this.model = source["model"];
+	        this.search = this.convertValues(source["search"], SearchSettings);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class UpdateConversationSettingsParams {
 	    systemPromptTemplate: string;
