@@ -107,13 +107,18 @@ const MessageBubble = ({message}: Props) => {
             <div className={`${message.author == 'user' ? "text-end" : "text-start"} text-gray-500 p-1 px-2`}>
                 {capitalizeFirstLetter(message.author == 'user' ? "you" : message.author)}
             </div>
-            <div className="flex flex-row">
-                {message.author == 'user' && <RefreshDouble className={`${effect && "animate-refresh_rotate_scaled"} flex-none m-2 scale-75 text-gray-500 hover:text-gray-400 cursor-pointer`} onClick={async () => {
-                    setEffect(true);
-                    await RerunFromMessage(message.conversationID, message.id);
-                }} onAnimationEnd={() => setEffect(false)}></RefreshDouble>}
-                {renderMarkdown(message)}
-            </div>
+            {message.author === 'user' ?
+                (<div className="flex flex-row">
+                    <RefreshDouble className={`${effect && "animate-refresh_rotate_scaled"} flex-none m-2 scale-75 text-gray-500 hover:text-gray-400 cursor-pointer`} onClick={async () => {
+                        setEffect(true);
+                        await RerunFromMessage(message.conversationID, message.id);
+                    }} onAnimationEnd={() => setEffect(false)}/>
+                    {renderMarkdown(message)}
+                </div>)
+                :
+                renderMarkdown(message)
+            }
+
         </div>
     )
 }
