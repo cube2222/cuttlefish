@@ -377,6 +377,7 @@ func (a *App) generateSystemPrompt(conversationSettings database.ConversationSet
 	var params struct {
 		ToolsDescription string
 		AnyToolsEnabled  bool
+		OperatingSystem  string
 	}
 
 	type toolDescription struct {
@@ -402,6 +403,13 @@ func (a *App) generateSystemPrompt(conversationSettings database.ConversationSet
 	}
 	params.ToolsDescription = string(data)
 	params.AnyToolsEnabled = len(toolsDescription) > 0
+
+	params.OperatingSystem = "MacOS"
+	if runtime.GOOS == "windows" {
+		params.OperatingSystem = "Windows"
+	} else if runtime.GOOS == "linux" {
+		params.OperatingSystem = "Linux"
+	}
 
 	var buf bytes.Buffer
 	// TODO: Use custom template.
