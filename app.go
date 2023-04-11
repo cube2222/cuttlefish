@@ -26,7 +26,6 @@ import (
 	"cuttlefish/tools/geturl"
 	"cuttlefish/tools/python"
 	"cuttlefish/tools/search"
-	sqltool "cuttlefish/tools/sql"
 	"cuttlefish/tools/terminal"
 )
 
@@ -53,7 +52,6 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"get_url":        &geturl.Tool{},
 			"chart":          &chart.Tool{},
 			"python":         &python.Tool{},
-			"sql":            &sqltool.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}
