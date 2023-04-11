@@ -6,6 +6,7 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 nvm install node
+apt update
 apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev
 
 npm install
