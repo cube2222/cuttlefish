@@ -1,26 +1,19 @@
-## About
+# Cuttlefish
 
-Wails template which includes: Vite, React, TS, TailwindCSS out of the box.
+Cuttlefish is a desktop chat app for ChatGPT. It's main feature is the ability to use tools, like the terminal, search, or get information from URLs. Specifically, it can use **your local terminal** to accomplish tasks you give it (keep that in mind re security though).
 
-Build with `Wails CLI v2.0.0`.
+It supports the ChatGPT-3.5 model, as well as GPT-4. It uses an OpenAI platform API key and is mainly aimed at a technical users.
 
-To use this [template](https://wails.io/docs/community/templates):
-```shell
-wails init -n "Your Project Name" -t https://github.com/hotafrika/wails-vite-react-ts-tailwind-template
-cd frontend/src
-npm install
-```
+---
 
-[Here](scripts) you can find useful scripts for building on different platforms and Wails CLI installation.
-
-## Live Development
-
-To run in live development mode, run `wails dev` in the project directory. In another terminal, go into the `frontend`
-directory and run `npm run dev`. The frontend dev server will run on http://localhost:34115. Connect to this in your
-browser and connect to your application.
-
-## Building
-
-To build a redistributable, production mode package, use `wails build`.
+Let's start with two quick demos, that show the power of Cuttlefish. First, a simple example of using the Terminal tool:
 
 
+And now, a more complex example that uses a combination of the search, get_url, and chart tools:
+
+
+## Installation
+TODO
+
+## Tools
+TODO
