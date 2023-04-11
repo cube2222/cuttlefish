@@ -460,7 +460,7 @@ func (a *App) GetDefaultConversationSettings() (database.ConversationSetting, er
 		return database.ConversationSetting{
 			ID:                   -1,
 			SystemPromptTemplate: defaultSystemPromptTemplate,
-			ToolsEnabled:         []string{"terminal", "python", "get_url", "chart"},
+			ToolsEnabled:         []string{"terminal", "get_url", "chart"},
 		}, nil
 	} else if err != nil {
 		return database.ConversationSetting{}, fmt.Errorf("couldn't get default conversation settings: %w", err)
