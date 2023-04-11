@@ -10,7 +10,7 @@ The MacOS and Windows builds can be executed on MacOS. The Linux build must be e
 Run on MacOS. Run the `scripts/build.sh` script.
 
 ## Linux build
-In a golang-based docker container, run `scripts/build-linux.sh`. Then, move the binaries (from `build/bin`) to the host machine, in the same directories.
+In a golang-based docker container on the amd64 platform, run `scripts/build-linux.sh`. Then, move the binaries (from `build/bin`) to the host machine, in the same directories.
 
 ## Publish
 Back on the MacOS machine, run `scripts/publish.sh`. This will create a set of zip-files in `build/release` that you can upload to GitHub.
