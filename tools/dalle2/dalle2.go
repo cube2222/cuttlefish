@@ -7,8 +7,8 @@ import (
 
 	"github.com/Andrew-peng/go-dalle2/dalle2"
 
-	"gptui/database"
-	"gptui/tools"
+	"cuttlefish/database"
+	"cuttlefish/tools"
 )
 
 type Tool struct {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gptui/database"
-	"gptui/tools"
+	"cuttlefish/database"
+	"cuttlefish/tools"
 )
 
 type Tool struct {

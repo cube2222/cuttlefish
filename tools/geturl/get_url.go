@@ -10,8 +10,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	gowiki "github.com/trietmn/go-wiki"
 
-	"gptui/database"
-	"gptui/tools"
+	"cuttlefish/database"
+	"cuttlefish/tools"
 )
 
 type Tool struct {

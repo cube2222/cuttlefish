@@ -19,14 +19,15 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/exp/slices"
 
-	"gptui/database"
-	"gptui/tools"
-	"gptui/tools/chart"
-	"gptui/tools/dalle2"
-	"gptui/tools/geturl"
-	"gptui/tools/python"
-	"gptui/tools/search"
-	"gptui/tools/terminal"
+	"cuttlefish/database"
+	"cuttlefish/tools"
+	"cuttlefish/tools/chart"
+	"cuttlefish/tools/dalle2"
+	"cuttlefish/tools/geturl"
+	"cuttlefish/tools/python"
+	"cuttlefish/tools/search"
+	sqltool "cuttlefish/tools/sql"
+	"cuttlefish/tools/terminal"
 )
 
 // App struct
@@ -52,6 +53,7 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"get_url":        &geturl.Tool{},
 			"chart":          &chart.Tool{},
 			"python":         &python.Tool{},
+			"sql":            &sqltool.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
 	}

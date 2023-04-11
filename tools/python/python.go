@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"gptui/database"
-	"gptui/tools"
+	"cuttlefish/database"
+	"cuttlefish/tools"
 )
 
 type Tool struct {

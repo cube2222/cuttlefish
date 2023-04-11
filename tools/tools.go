@@ -3,7 +3,7 @@ package tools
 import (
 	"context"
 
-	"gptui/database"
+	"cuttlefish/database"
 )
 
 // TODO: Some tools might like to keep state for the whole duration of the "Chain" of commands that GPT does. i.e. a Python REPL.

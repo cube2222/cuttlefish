@@ -1,4 +1,4 @@
-module gptui
+module cuttlefish
 
 go 1.18
 

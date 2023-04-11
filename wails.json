@@ -1,6 +1,6 @@
 {
-  "name": "OctoAI Chat",
-  "outputfilename": "OctoAIChat",
+  "name": "cuttlefish",
+  "outputfilename": "cuttlefish",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
@@ -8,5 +8,12 @@
   "author": {
     "name": "Jakub Martin",
     "email": "jakub.wit.martin@gmail.com"
+  },
+  "info": {
+    "companyName": "Jakub Martin",
+    "productName": "cuttlefish",
+    "productVersion": "0.0.1",
+    "copyright": "Copyright Jakub Martin 2023",
+    "comments": "Desktop chat app for ChatGPT that uses tools."
   }
 }

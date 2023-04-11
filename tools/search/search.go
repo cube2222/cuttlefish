@@ -8,8 +8,8 @@ import (
 	"google.golang.org/api/customsearch/v1"
 	"google.golang.org/api/option"
 
-	"gptui/database"
-	"gptui/tools"
+	"cuttlefish/database"
+	"cuttlefish/tools"
 )
 
 // TODO: Write how-to guide for getting the API key.
