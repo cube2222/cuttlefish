@@ -53,6 +53,7 @@ However, it's disabled by default, because the Assistant tends to overuse it, an
 ## Configuration
 You can configure global app settings or conversation settings. With the conversation settings being either specific to a single conversation or the default that's used for new ones.
 Here's a quick walk through all the configuration options:
+![settings](https://user-images.githubusercontent.com/7013055/231303136-151581fe-d526-4de5-a101-344069e3957f.mp4)
 
 Additionally, conversation templates are on the roadmap and will let you have multiple "personalities" (sets of default conversation settings) to chat with.
 
