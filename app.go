@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	goruntime "runtime"
 	"strings"
 	"sync"
 	"text/template"
@@ -405,9 +406,9 @@ func (a *App) generateSystemPrompt(conversationSettings database.ConversationSet
 	params.AnyToolsEnabled = len(toolsDescription) > 0
 
 	params.OperatingSystem = "MacOS"
-	if runtime.GOOS == "windows" {
+	if goruntime.GOOS == "windows" {
 		params.OperatingSystem = "Windows"
-	} else if runtime.GOOS == "linux" {
+	} else if goruntime.GOOS == "linux" {
 		params.OperatingSystem = "Linux"
 	}
 
