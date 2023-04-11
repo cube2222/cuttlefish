@@ -27,6 +27,7 @@ func Migrate(db *sql.DB) error {
 	var migrations []Migration
 
 	// Those could be supported, but aren't right now, as generating the schema for sqlc is too much work then.
+	// That said, as long as they don't include DLL, they're fine, really.
 	// migrations = append(migrations, goMigrations...)
 
 	entries, err := sqlMigrations.ReadDir("sql_migrations")

@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 
@@ -22,15 +25,20 @@ var assets embed.FS
 func main() {
 	ctx := context.Background()
 
-	if err := os.MkdirAll("~/.cuttlefish", 0755); err != nil {
+	userHomedir, err := homedir.Dir()
+	if err != nil {
 		panic(err)
 	}
 
-	// Open somewhere in `~/` instead of current directory.
-	db, err := sql.Open("sqlite", "file:~/.cuttlefish/data.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)")
-	// db, err := sql.Open("sqlite", "file:gptui.db?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)")
-	// db, err := sql.Open("sqlite3", "file:gptui.db?cache=shared&mode=rwc&_foreign_keys=1&_journal_mode=WAL&_busy_timeout=5000&_loc=auto")
-	// db, err := sql.Open("sqlite3", "file:gptui.db?mode=rwc&_foreign_keys=1&_busy_timeout=5000&_loc=auto")
+	cuttlefishHomedir := filepath.Join(userHomedir, ".cuttlefish")
+
+	if err := os.MkdirAll(cuttlefishHomedir, 0755); err != nil {
+		panic(err)
+	}
+
+	dbFile := filepath.Join(cuttlefishHomedir, "data.db")
+
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)", dbFile))
 	if err != nil {
 		log.Fatal(err)
 	}

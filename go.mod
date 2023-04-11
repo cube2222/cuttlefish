@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/Andrew-peng/go-dalle2 v0.1.0
 	github.com/PuerkitoBio/goquery v1.8.1
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sashabaranov/go-openai v1.5.8
 	github.com/trietmn/go-wiki v1.0.0
 	github.com/wailsapp/wails/v2 v2.4.1
