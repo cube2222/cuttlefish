@@ -10,5 +10,4 @@ apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev
 
 npm install
 
-wails build --noPackage --platform linux/arm64 -o linux/arm64/cuttlefish
 wails build --noPackage --platform linux/amd64 -o linux/amd64/cuttlefish
