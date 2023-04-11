@@ -75,13 +75,13 @@ func fetchAndExtractMainContent(urlToGet string) (string, error) {
 
 	resp, err := http.Get(urlToGet)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not get URL: %w", err)
 	}
 	defer resp.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not parse HTML: %w", err)
 	}
 
 	switch {

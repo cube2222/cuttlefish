@@ -145,7 +145,13 @@ func (a *App) SendMessage(conversationID int, content string) (database.Message,
 	return msg, nil
 }
 
-func (a *App) runChainOfMessages(conversationID int) error {
+func (a *App) runChainOfMessages(conversationID int) (err error) {
+	defer func() {
+		if msg := recover(); msg != nil {
+			err = fmt.Errorf("panic caught: %v", msg)
+		}
+	}()
+
 	genCtx, cancelGeneration := context.WithCancel(a.ctx)
 	defer cancelGeneration()
 
@@ -243,8 +249,7 @@ func (a *App) runChainOfMessages(conversationID int) error {
 			retries++
 			continue
 		}
-		toolUseEnabled := true
-		if toolUseEnabled && (strings.Contains(gptMessage.Content, "```action") || strings.Contains(gptMessage.Content, "Action:")) {
+		if strings.Contains(gptMessage.Content, "```action") || strings.Contains(gptMessage.Content, "Action:") {
 			// TODO: Make it so that each tool use can be approved by the user.
 
 			// A tool has been called upon!
