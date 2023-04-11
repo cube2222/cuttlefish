@@ -198,6 +198,11 @@ func (a *App) runChainOfMessages(conversationID int) (err error) {
 		}
 	}()
 
+	settings, err := a.getSettingsRaw()
+	if err != nil {
+		return fmt.Errorf("couldn't get settings: %w", err)
+	}
+
 	stop := []string{"Observation", "Response"}
 	retries := 0
 	for {
@@ -210,7 +215,7 @@ func (a *App) runChainOfMessages(conversationID int) (err error) {
 			return fmt.Errorf("couldn't convert messages to GPT messages: %w", err)
 		}
 		stream, err := a.openAICli().CreateChatCompletionStream(genCtx, openai.ChatCompletionRequest{
-			Model:       openai.GPT3Dot5Turbo,
+			Model:       settings.Model,
 			MaxTokens:   500,
 			Temperature: 0.7,
 			TopP:        1,
