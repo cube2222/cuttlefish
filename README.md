@@ -7,10 +7,10 @@ It supports the ChatGPT-3.5 model, as well as GPT-4. It uses an OpenAI platform 
 ---
 
 Let's start with two quick demos, that show the power of Cuttlefish. First, a simple example of using the Terminal tool:
-![wifi-approvals](https://user-images.githubusercontent.com/7013055/231297034-79e54ba7-9023-4d59-9bfb-26bdb0743770.mp4)
+![wifi-approvals](demo/wifi-approvals.gif)
 
 And now, a more complex example that uses a combination of the search, get_url, and chart tools:
-![countries](https://user-images.githubusercontent.com/7013055/231279270-184aa34f-bc98-49ff-8ec8-043c56048844.mp4)
+![countries](demo/countries.gif)
 
 ## Installation
 On MacOS you can just
@@ -27,7 +27,7 @@ There's multiple tools available in Cuttlefish. Let's go over them one by one.
 ### Terminal
 The most powerful tool, really. It allows the Assistant to run arbitrary commands on your host. It's very useful to give it tasks to do and have it solve them. It's also quite useful to ask questions about your own computer.
 
-By default, terminal commands require approval, so you'll be able to review them before they actually get executed.
+By default, terminal commands require approval, so you'll be able to review them before they actually get executed. However, you can customize that in the settings.
 
 ### Search
 Search allows the Assistant to search the web using Google Custom Search. You'll need to set up the proper API keys (the app settings contain a how-to), but on the plus side, as of the time of writing, the first 100 searches per day are free.
@@ -52,8 +52,6 @@ However, it's disabled by default, because the Assistant tends to overuse it, an
 
 ## Configuration
 You can configure global app settings or conversation settings. With the conversation settings being either specific to a single conversation or the default that's used for new ones.
-Here's a quick walk through all the configuration options:
-![settings](https://user-images.githubusercontent.com/7013055/231303136-151581fe-d526-4de5-a101-344069e3957f.mp4)
 
 Additionally, conversation templates are on the roadmap and will let you have multiple "personalities" (sets of default conversation settings) to chat with.
 
