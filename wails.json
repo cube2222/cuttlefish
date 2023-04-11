@@ -12,7 +12,7 @@
   "info": {
     "companyName": "Jakub Martin",
     "productName": "cuttlefish",
-    "productVersion": "0.0.1",
+    "productVersion": "0.1.0",
     "copyright": "Copyright Jakub Martin 2023",
     "comments": "Desktop chat app for ChatGPT that uses tools."
   }
