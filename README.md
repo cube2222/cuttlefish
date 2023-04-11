@@ -13,7 +13,13 @@ And now, a more complex example that uses a combination of the search, get_url, 
 ![countries](https://user-images.githubusercontent.com/7013055/231279270-184aa34f-bc98-49ff-8ec8-043c56048844.mp4)
 
 ## Installation
-TODO
+On MacOS you can just
+```
+brew tap cube2222/cube2222
+brew install cuttlefish
+```
+
+on other systems, download the archive for your system from the latest release and run the binary inside it.
 
 ## Tools
 TODO
