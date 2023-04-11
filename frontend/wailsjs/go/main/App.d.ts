@@ -3,6 +3,8 @@
 import {database} from '../models';
 import {main} from '../models';
 
+export function Approve(arg1:number,arg2:string):Promise<void>;
+
 export function CancelGeneration(arg1:number):Promise<void>;
 
 export function Conversations():Promise<Array<database.Conversation>>;
@@ -18,6 +20,8 @@ export function GetConversationSettings(arg1:number):Promise<database.Conversati
 export function GetDefaultConversationSettings():Promise<database.ConversationSetting>;
 
 export function GetSettings():Promise<database.Settings>;
+
+export function ListApprovalRequests(arg1:number):Promise<Array<main.ApprovalRequest>>;
 
 export function Messages(arg1:number):Promise<Array<database.Message>>;
 

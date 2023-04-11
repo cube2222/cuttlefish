@@ -1,17 +1,13 @@
-import {CancelGeneration, GetConversation, Messages, RerunFromMessage, SendMessage} from "../wailsjs/go/main/App";
+import {Approve, CancelGeneration, GetConversation, ListApprovalRequests, Messages} from "../wailsjs/go/main/App";
 import React, {useEffect, useRef, useState} from "react";
-import {database} from "../wailsjs/go/models";
+import {database, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime";
-import ReactMarkdown from "react-markdown";
-import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
-import {dracula} from "react-syntax-highlighter/dist/esm/styles/prism";
-import {EditPencil, MinusCircle, RefreshDouble} from "iconoir-react";
+import {MinusCircle} from "iconoir-react";
+import ChatInputForm from "./ChatInputForm";
+import MessageBubble from "./Message";
 import Message = database.Message;
 import Conversation = database.Conversation;
-import {capitalizeFirstLetter, isJSONString} from "./helpers";
-import ChatInputForm from "./ChatInputForm";
-import ReactECharts from 'echarts-for-react';
-import MessageBubble from "./Message";
+import ApprovalRequest = main.ApprovalRequest;
 
 interface Props {
     conversationID: number | null;
@@ -20,6 +16,7 @@ interface Props {
 
 const Chat = ({conversationID, setConversationID}: Props) => {
     const [messages, setMessages] = useState<Array<Message>>([]);
+    const [approvalRequests, setApprovalRequests] = useState<Array<ApprovalRequest>>([]);
     const [curConversation, setCurConversation] = useState<database.Conversation | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -35,12 +32,13 @@ const Chat = ({conversationID, setConversationID}: Props) => {
         GetConversation(conversationID).then((conversation: Conversation) => {
             setCurConversation(conversation);
         })
+        ListApprovalRequests(conversationID).then((requests) => {
+            setApprovalRequests(requests);
+        })
     }, [conversationID]);
 
     useEffect(() => {
         if (conversationID === null) {
-            setMessages([]);
-            setCurConversation(null);
             return;
         }
         return EventsOn(`conversation-${conversationID}-updated`, (data: any) => {
@@ -49,6 +47,17 @@ const Chat = ({conversationID, setConversationID}: Props) => {
             });
             GetConversation(conversationID).then((conversation: Conversation) => {
                 setCurConversation(conversation);
+            })
+        })
+    }, [conversationID]);
+
+    useEffect(() => {
+        if (conversationID === null) {
+            return;
+        }
+        return EventsOn(`conversation-${conversationID}-approvals-updated`, (data: any) => {
+            ListApprovalRequests(conversationID).then((requests) => {
+                setApprovalRequests(requests);
             })
         })
     }, [conversationID]);
@@ -74,13 +83,20 @@ const Chat = ({conversationID, setConversationID}: Props) => {
                     ))}
                 </div>
                 {curConversation?.generating &&
-                  <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400" onClick={async () => {
+                  <MinusCircle className="absolute left-4 bottom-1 hover:text-gray-400 cursor-pointer" onClick={async () => {
                       if (curConversation !== null) {
                           await CancelGeneration(curConversation.id)
                       }
                   }}/>}
+                {conversationID && approvalRequests.map((request, index) => {
+                    // There's at most one.
+                    return <div className="absolute left-12 bottom-1 bg-green-400 hover:bg-green-300 opacity-75 text-gray-800 rounded-full px-2 cursor-pointer" onClick={async () => await Approve(conversationID, request.id)}>
+                        Click to approve: "{request.message}"
+                    </div>
+                })}
             </div>
-            <ChatInputForm disabled={curConversation?.generating || false} conversationID={conversationID} setConversationID={setConversationID}/>
+            <ChatInputForm disabled={curConversation?.generating || false} conversationID={conversationID}
+                           setConversationID={setConversationID}/>
         </div>
     </div>
 }

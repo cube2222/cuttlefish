@@ -13,6 +13,7 @@ const AppSettingsButton = ({className}: Props) => {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [settings, setSettings] = useState<database.Settings>();
     const [openAiApiKey, setOpenAiApiKey] = useState("");
+    const [terminalRequireApproval, setTerminalRequireApproval] = useState(false);
     const [googleCloudApiKey, setGoogleCloudApiKey] = useState("");
     const [customSearchEngineId, setCustomSearchEngineId] = useState("");
     const [model, setModel] = useState("gpt-3.5-turbo");
@@ -23,6 +24,7 @@ const AppSettingsButton = ({className}: Props) => {
         GetSettings().then((curSettings) => {
             setSettings(curSettings);
             setOpenAiApiKey(curSettings.openAiApiKey);
+            setTerminalRequireApproval(curSettings.terminal.requireApproval);
             setModel(curSettings.model);
             setGoogleCloudApiKey(curSettings.search.googleCustomSearch.googleCloudApiKey);
             setCustomSearchEngineId(curSettings.search.googleCustomSearch.customSearchEngineId);
@@ -37,11 +39,12 @@ const AppSettingsButton = ({className}: Props) => {
         setChanged(
             openAiApiKey !== settings.openAiApiKey
             || model !== settings.model
+            || terminalRequireApproval !== settings.terminal.requireApproval
             || googleCloudApiKey !== settings.search.googleCustomSearch.googleCloudApiKey
             || customSearchEngineId !== settings.search.googleCustomSearch.customSearchEngineId
             || pythonInterpreterPath !== settings.python.interpreterPath
         );
-    }, [settings, openAiApiKey, model, googleCloudApiKey, customSearchEngineId, pythonInterpreterPath])
+    }, [settings, openAiApiKey, terminalRequireApproval, model, googleCloudApiKey, customSearchEngineId, pythonInterpreterPath])
 
     const saveSettings = async () => {
         const newSettings = await SaveSettings({
@@ -52,6 +55,9 @@ const AppSettingsButton = ({className}: Props) => {
                     googleCloudApiKey: googleCloudApiKey,
                     customSearchEngineId: customSearchEngineId,
                 }
+            },
+            terminal: {
+                requireApproval: terminalRequireApproval,
             },
             python: {
                 interpreterPath: pythonInterpreterPath,
@@ -125,6 +131,27 @@ const AppSettingsButton = ({className}: Props) => {
                                                 </Listbox.Options>
                                             </div>
                                         </Listbox>
+                                    </div>
+                                </div>
+                                <div className="p-2">
+                                    <h2 className="text-md font-bold text-gray-400 mb-2">Terminal</h2>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center justify-between px-2 py-1">
+                                            <p className="text-gray-400">Require Approval</p>
+                                            <Switch
+                                                checked={terminalRequireApproval}
+                                                onChange={(newValue) => setTerminalRequireApproval(newValue)}
+                                                className={`${
+                                                    terminalRequireApproval ? 'bg-gray-400' : 'bg-gray-700'
+                                                } relative inline-flex h-6 w-11 items-center rounded-full border border-gray-300 border-opacity-50`}
+                                            >
+                                                <span
+                                                    className={`${
+                                                        terminalRequireApproval ? 'translate-x-6' : 'translate-x-1'
+                                                    } inline-block h-4 w-4 transform rounded-full bg-gray-200 transition`}
+                                                />
+                                            </Switch>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-2">

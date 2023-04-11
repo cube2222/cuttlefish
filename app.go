@@ -39,6 +39,13 @@ type App struct {
 
 	m                       sync.Mutex
 	generationContextCancel map[int]context.CancelFunc
+	pendingApprovalRequests map[int]approvalRequest
+}
+
+type approvalRequest struct {
+	approvalID   string
+	approvalChan chan struct{}
+	message      string
 }
 
 // NewApp creates a new App application struct
@@ -55,6 +62,7 @@ func NewApp(ctx context.Context, queries *database.Queries) *App {
 			"python":         &python.Tool{},
 		},
 		generationContextCancel: map[int]context.CancelFunc{},
+		pendingApprovalRequests: map[int]approvalRequest{},
 	}
 
 	settings, err := out.getSettingsRaw()
@@ -281,7 +289,7 @@ func (a *App) runChainOfMessages(conversationID int) (err error) {
 					// TODO: respond as observation
 					return fmt.Errorf("tool `%s` not found", action.Tool)
 				}
-				toolInstance, err = tool.Instantiate(genCtx, a.settings)
+				toolInstance, err = tool.Instantiate(genCtx, a.settings, &AppRuntime{conversationID: conversationID, app: a})
 				if err != nil {
 					// TODO: respond as observation
 					return fmt.Errorf("couldn't instantiate tool `%s`: %w", action.Tool, err)
@@ -355,6 +363,9 @@ func (a *App) messagesToGPTMessages(conversationSettings database.ConversationSe
 }
 
 func (a *App) RerunFromMessage(conversationID int, messageID int) error {
+	// A generation could still be happening.
+	a.CancelGeneration(conversationID)
+
 	if err := a.queries.ResetConversationFrom(a.ctx, database.ResetConversationFromParams{
 		ConversationID: conversationID,
 		ID:             messageID,
@@ -484,6 +495,9 @@ func (a *App) getSettingsRaw() (database.Settings, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.Settings{
 			Model: "gpt-3.5-turbo",
+			Terminal: database.TerminalSettings{
+				RequireApproval: true,
+			},
 			Python: database.PythonSettings{
 				InterpreterPath: "python3",
 			},
@@ -572,4 +586,44 @@ func (a *App) GetAvailableTools() []AvailableTool {
 		return a.Name < b.Name
 	})
 	return out
+}
+
+type ApprovalRequest struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+}
+
+func (a *App) ListApprovalRequests(conversationID int) ([]ApprovalRequest, error) {
+	a.m.Lock()
+	req, ok := a.pendingApprovalRequests[conversationID]
+	a.m.Unlock()
+	if !ok {
+		// Empty array and nil are *not the same* for the frontend side.
+		return []ApprovalRequest{}, nil
+	}
+	return []ApprovalRequest{
+		{
+			ID:      req.approvalID,
+			Message: req.message,
+		},
+	}, nil
+}
+
+func (a *App) Approve(conversationID int, approvalID string) error {
+	a.m.Lock()
+	req, ok := a.pendingApprovalRequests[conversationID]
+	a.m.Unlock()
+	if !ok {
+		return fmt.Errorf("no pending approval request for conversation %d", conversationID)
+	}
+	if req.approvalID != approvalID {
+		return fmt.Errorf("no pending approval request with ID %d for conversation %d", approvalID, conversationID)
+	}
+	select {
+	case req.approvalChan <- struct{}{}:
+	default:
+		// I.e. because a user approved repeatedly in quick succession.
+		// The channel should be buffered, so at least one message will go through.
+	}
+	return nil
 }

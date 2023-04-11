@@ -26,7 +26,7 @@ func (t *Tool) ArgumentDescriptions() map[string]string {
 	}
 }
 
-func (t *Tool) Instantiate(ctx context.Context, settings database.Settings) (tools.ToolInstance, error) {
+func (t *Tool) Instantiate(ctx context.Context, settings database.Settings, runtime tools.AppRuntime) (tools.ToolInstance, error) {
 	return &ToolInstance{}, nil
 }
 

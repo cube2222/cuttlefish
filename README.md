@@ -1,6 +1,6 @@
 # Cuttlefish
 
-Cuttlefish is a desktop chat app for ChatGPT. It's main feature is the ability to use tools, like the terminal, search, or get information from URLs. Specifically, it can use **your local terminal** to accomplish tasks you give it (keep that in mind re security though).
+Cuttlefish is a desktop chat app for ChatGPT. It's main feature is the ability to use tools, like the terminal, search, or get information from URLs. Specifically, it can use **your local terminal** to accomplish tasks you give it.
 
 It supports the ChatGPT-3.5 model, as well as GPT-4. It uses an OpenAI platform API key and is mainly aimed at a technical users.
 

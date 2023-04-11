@@ -28,7 +28,7 @@ func (t *Tool) ArgumentDescriptions() map[string]string {
 	}
 }
 
-func (t *Tool) Instantiate(ctx context.Context, settings database.Settings) (tools.ToolInstance, error) {
+func (t *Tool) Instantiate(ctx context.Context, settings database.Settings, runtime tools.AppRuntime) (tools.ToolInstance, error) {
 	dalleCli, err := dalle2.MakeNewClientV1(settings.OpenAIAPIKey)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create dalle2 client: %w", err)

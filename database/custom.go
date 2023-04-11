@@ -1,10 +1,15 @@
 package database
 
 type Settings struct {
-	OpenAIAPIKey string         `json:"openAiApiKey"`
-	Model        string         `json:"model"`
-	Search       SearchSettings `json:"search"`
-	Python       PythonSettings `json:"python"`
+	OpenAIAPIKey string           `json:"openAiApiKey"`
+	Model        string           `json:"model"`
+	Terminal     TerminalSettings `json:"terminal"`
+	Search       SearchSettings   `json:"search"`
+	Python       PythonSettings   `json:"python"`
+}
+
+type TerminalSettings struct {
+	RequireApproval bool `json:"requireApproval"`
 }
 
 type SearchSettings struct {

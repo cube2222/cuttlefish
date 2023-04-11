@@ -27,17 +27,27 @@ func (t *Tool) ArgumentDescriptions() map[string]string {
 	}
 }
 
-func (t *Tool) Instantiate(ctx context.Context, settings database.Settings) (tools.ToolInstance, error) {
-	return &ToolInstance{}, nil
+func (t *Tool) Instantiate(ctx context.Context, settings database.Settings, runtime tools.AppRuntime) (tools.ToolInstance, error) {
+	return &ToolInstance{
+		runtime:         runtime,
+		requireApproval: settings.Terminal.RequireApproval,
+	}, nil
 }
 
 type ToolInstance struct {
+	runtime         tools.AppRuntime
+	requireApproval bool
 }
 
 func (t *ToolInstance) Run(ctx context.Context, args map[string]interface{}) (*tools.RunResult, error) {
 	command, ok := args["command"].(string)
 	if !ok {
 		return nil, fmt.Errorf("command is not a string")
+	}
+	if t.requireApproval {
+		if err := t.runtime.WaitForApproval(ctx, "run terminal command"); err != nil {
+			return nil, fmt.Errorf("user did not approve: %w", err)
+		}
 	}
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	var buf bytes.Buffer

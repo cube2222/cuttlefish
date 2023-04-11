@@ -164,9 +164,22 @@ export namespace database {
 		    return a;
 		}
 	}
+	export class TerminalSettings {
+	    requireApproval: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new TerminalSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.requireApproval = source["requireApproval"];
+	    }
+	}
 	export class Settings {
 	    openAiApiKey: string;
 	    model: string;
+	    terminal: TerminalSettings;
 	    search: SearchSettings;
 	    python: PythonSettings;
 	
@@ -178,6 +191,7 @@ export namespace database {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.openAiApiKey = source["openAiApiKey"];
 	        this.model = source["model"];
+	        this.terminal = this.convertValues(source["terminal"], TerminalSettings);
 	        this.search = this.convertValues(source["search"], SearchSettings);
 	        this.python = this.convertValues(source["python"], PythonSettings);
 	    }
@@ -200,6 +214,7 @@ export namespace database {
 		    return a;
 		}
 	}
+	
 	export class UpdateConversationSettingsParams {
 	    systemPromptTemplate: string;
 	    toolsEnabled: string[];
@@ -221,6 +236,20 @@ export namespace database {
 
 export namespace main {
 	
+	export class ApprovalRequest {
+	    id: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ApprovalRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.message = source["message"];
+	    }
+	}
 	export class AvailableTool {
 	    name: string;
 	    ID: string;

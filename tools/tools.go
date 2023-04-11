@@ -6,13 +6,15 @@ import (
 	"cuttlefish/database"
 )
 
-// TODO: Some tools might like to keep state for the whole duration of the "Chain" of commands that GPT does. i.e. a Python REPL.
+type AppRuntime interface {
+	WaitForApproval(ctx context.Context, message string) error
+}
 
 type Tool interface {
 	Name() string
 	Description() string
 	ArgumentDescriptions() map[string]string
-	Instantiate(ctx context.Context, settings database.Settings) (ToolInstance, error)
+	Instantiate(ctx context.Context, settings database.Settings, runtime AppRuntime) (ToolInstance, error)
 }
 
 type ToolInstance interface {
