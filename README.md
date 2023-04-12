@@ -55,6 +55,9 @@ You can configure global app settings or conversation settings. With the convers
 
 Additionally, conversation templates are on the roadmap and will let you have multiple "personalities" (sets of default conversation settings) to chat with.
 
+### Models
+Cuttlefish support both GPT-3.5-Turbo and GPT-4. GPT-3.5 often goes off the rails and requires you to retry your prompts, but it tends to get there eventually. GPT-4 is much more stable and consistent, but is waaaaay more expensive, so take care when using it - it's also quite slow.
+
 ## Roadmap
 - Conversation Templates - have more than just a single set of default conversation settings for newly created chats
 - Custom rendering for tool inputs and outputs
